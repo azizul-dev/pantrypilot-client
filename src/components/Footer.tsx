@@ -6,10 +6,10 @@ import { ChefHat, Mail, Phone, MapPin } from "lucide-react";
 export default function Footer() {
   const quickLinks = [
     { label: "Home", href: "/" },
-    { label: "Explore Recipes", href: "#explore" },
-    { label: "Our Blog", href: "#blog" },
-    { label: "About Us", href: "#about" },
-    { label: "Contact", href: "#contact" },
+    { label: "Explore Recipes", href: "/recipes" },
+    { label: "Our Blog", href: "/blog" },
+    { label: "About Us", href: "/about" },
+    { label: "Contact", href: "/contact" },
   ];
 
   const categories = [

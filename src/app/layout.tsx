@@ -4,6 +4,7 @@ import "./globals.css";
 import Providers from "@/components/Providers";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import RouteTransition from "@/components/RouteTransition";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -35,7 +36,9 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col font-inter bg-bg-cream text-text-brown selection:bg-primary/20 selection:text-primary">
         <Providers>
           <Navbar />
-          <main className="flex-grow">{children}</main>
+          <RouteTransition>
+            <main className="flex-grow flex flex-col">{children}</main>
+          </RouteTransition>
           <Footer />
         </Providers>
       </body>

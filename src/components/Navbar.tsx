@@ -4,10 +4,12 @@ import { useState } from "react";
 import Link from "next/link";
 import { Menu, X, ChefHat, LogOut, PlusCircle, LayoutDashboard, LogIn, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const pathname = usePathname();
   const { isAuthenticated, isLoading, user, logout } = useAuth();
 
   const toggleMenu = () => setIsOpen(!isOpen);
@@ -16,8 +18,9 @@ export default function Navbar() {
     { label: "Home", href: "/" },
     { label: "Explore", href: "/recipes" },
     { label: "AI Suggest", href: "/suggest" },
-    { label: "About", href: "/#about" },
-    { label: "Contact", href: "/#contact" },
+    { label: "Blog", href: "/blog" },
+    { label: "About", href: "/about" },
+    { label: "Contact", href: "/contact" },
   ];
 
   return (
@@ -32,15 +35,22 @@ export default function Navbar() {
 
           {/* Desktop Nav Links */}
           <nav className="hidden md:flex items-center gap-8 font-medium">
-            {mainLinks.map((link) => (
-              <Link
-                key={link.label}
-                href={link.href}
-                className="text-text-brown/85 hover:text-primary transition-colors duration-200 text-sm"
-              >
-                {link.label}
-              </Link>
-            ))}
+            {mainLinks.map((link) => {
+              const active = link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
+              return (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  className={`text-sm py-1 border-b-2 transition-all duration-200 ${
+                    active
+                      ? "text-primary border-primary font-bold"
+                      : "text-text-brown/85 border-transparent hover:text-primary hover:border-primary/30"
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
           </nav>
 
           {/* Desktop Actions */}
@@ -114,16 +124,23 @@ export default function Navbar() {
             >
               <div className="flex flex-col gap-6">
                 <nav className="flex flex-col gap-4">
-                  {mainLinks.map((link) => (
-                    <Link
-                      key={link.label}
-                      href={link.href}
-                      onClick={toggleMenu}
-                      className="font-poppins font-medium text-lg text-text-brown hover:text-primary transition-colors"
-                    >
-                      {link.label}
-                    </Link>
-                  ))}
+                  {mainLinks.map((link) => {
+                    const active = link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
+                    return (
+                      <Link
+                        key={link.label}
+                        href={link.href}
+                        onClick={toggleMenu}
+                        className={`font-poppins font-medium text-lg transition-colors border-l-4 pl-3 py-1 ${
+                          active
+                            ? "text-primary border-primary"
+                            : "text-text-brown border-transparent hover:text-primary hover:border-primary/30"
+                        }`}
+                      >
+                        {link.label}
+                      </Link>
+                    );
+                  })}
                 </nav>
                 <hr className="border-neutral-100" />
                 <div className="flex flex-col gap-4">
