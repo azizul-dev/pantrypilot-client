@@ -501,7 +501,7 @@ export default function HomePage() {
               transition={{ duration: 0.8 }}
               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8"
             >
-              {recipes.slice(0, 8).map((recipe) => (
+              {(Array.isArray(recipes) ? recipes : []).slice(0, 8).map((recipe) => (
                 <article
                   key={recipe._id}
                   className="pantry-card group cursor-pointer overflow-hidden flex flex-col justify-between"
