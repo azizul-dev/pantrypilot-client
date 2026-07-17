@@ -2,22 +2,22 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu, X, ChefHat, LogOut, PlusCircle, LayoutDashboard, LogIn } from "lucide-react";
+import { Menu, X, ChefHat, LogOut, PlusCircle, LayoutDashboard, LogIn, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
-  // Simulate logged in state for prototype
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { isAuthenticated, isLoading, user, logout } = useAuth();
 
   const toggleMenu = () => setIsOpen(!isOpen);
 
   const mainLinks = [
     { label: "Home", href: "/" },
-    { label: "Explore", href: "#explore" },
-    { label: "Blog", href: "#blog" },
-    { label: "About", href: "#about" },
-    { label: "Contact", href: "#contact" },
+    { label: "Explore", href: "/recipes" },
+    { label: "AI Suggest", href: "/suggest" },
+    { label: "About", href: "/#about" },
+    { label: "Contact", href: "/#contact" },
   ];
 
   return (
@@ -45,24 +45,24 @@ export default function Navbar() {
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center gap-4">
-            {isLoggedIn ? (
+            {isAuthenticated ? (
               <>
                 <Link
-                  href="#add-recipe"
+                  href="/items/add"
                   className="flex items-center gap-1.5 text-sm font-medium text-secondary hover:text-primary transition-colors duration-200"
                 >
                   <PlusCircle className="h-4 w-4" />
                   <span>Add Recipe</span>
                 </Link>
                 <Link
-                  href="#manage"
+                  href="/items/manage"
                   className="flex items-center gap-1.5 text-sm font-medium text-secondary hover:text-primary transition-colors duration-200"
                 >
                   <LayoutDashboard className="h-4 w-4" />
                   <span>Manage</span>
                 </Link>
                 <button
-                  onClick={() => setIsLoggedIn(false)}
+                  onClick={logout}
                   className="flex items-center gap-1.5 rounded-full border border-neutral-200 px-4 py-1.5 text-sm font-medium text-text-brown hover:bg-neutral-50 transition-colors duration-200"
                 >
                   <LogOut className="h-4 w-4" />
@@ -70,13 +70,13 @@ export default function Navbar() {
                 </button>
               </>
             ) : (
-              <button
-                onClick={() => setIsLoggedIn(true)}
+              <Link
+                href="/login"
                 className="flex items-center gap-1.5 rounded-full bg-primary px-5 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary/95 transition-all duration-200 hover:-translate-y-0.5"
               >
                 <LogIn className="h-4 w-4" />
                 <span>Sign In</span>
-              </button>
+              </Link>
             )}
           </div>
 
@@ -127,10 +127,10 @@ export default function Navbar() {
                 </nav>
                 <hr className="border-neutral-100" />
                 <div className="flex flex-col gap-4">
-                  {isLoggedIn ? (
+                  {isAuthenticated ? (
                     <>
                       <Link
-                        href="#add-recipe"
+                        href="/items/add"
                         onClick={toggleMenu}
                         className="flex items-center gap-2.5 font-medium text-text-brown hover:text-primary"
                       >
@@ -138,7 +138,7 @@ export default function Navbar() {
                         <span>Add Recipe</span>
                       </Link>
                       <Link
-                        href="#manage"
+                        href="/items/manage"
                         onClick={toggleMenu}
                         className="flex items-center gap-2.5 font-medium text-text-brown hover:text-primary"
                       >
@@ -151,28 +151,23 @@ export default function Navbar() {
               </div>
 
               <div>
-                {isLoggedIn ? (
+                {isAuthenticated ? (
                   <button
-                    onClick={() => {
-                      setIsLoggedIn(false);
-                      toggleMenu();
-                    }}
+                    onClick={() => { logout(); toggleMenu(); }}
                     className="flex w-full items-center justify-center gap-2 rounded-xl border border-neutral-200 py-3 font-medium text-text-brown hover:bg-neutral-50"
                   >
                     <LogOut className="h-5 w-5" />
                     <span>Logout</span>
                   </button>
                 ) : (
-                  <button
-                    onClick={() => {
-                      setIsLoggedIn(true);
-                      toggleMenu();
-                    }}
+                  <Link
+                    href="/login"
+                    onClick={toggleMenu}
                     className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 font-medium text-white shadow-sm hover:bg-primary/95"
                   >
                     <LogIn className="h-5 w-5" />
                     <span>Sign In</span>
-                  </button>
+                  </Link>
                 )}
               </div>
             </motion.div>
