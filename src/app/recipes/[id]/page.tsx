@@ -80,30 +80,30 @@ const FALLBACK_DETAILED_RECIPES: Record<string, DetailedRecipe> = {
   },
 };
 
-const RELATED_RECIPES = [
-  {
-    _id: "2",
-    title: "Spiced Chickpea & Spinach Curry",
-    shortDescription:
-      "A flavorful, aromatic vegan curry packed with protein-rich chickpeas and fresh spinach.",
-    cuisineType: "Indian",
-    avgRating: 4.9,
-    images: [
-      "https://images.unsplash.com/photo-1547825407-2d060104b7c8?auto=format&fit=crop&q=80&w=600",
-    ],
-  },
-  {
-    _id: "4",
-    title: "Mediterranean Quinoa Bowl",
-    shortDescription:
-      "A vibrant, healthy bowl loaded with cucumbers, olives, cherry tomatoes, and grilled feta cheese.",
-    cuisineType: "Mediterranean",
-    avgRating: 4.6,
-    images: [
-      "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&q=80&w=600",
-    ],
-  },
-];
+// const RELATED_RECIPES = [
+//   {
+//     _id: "2",
+//     title: "Spiced Chickpea & Spinach Curry",
+//     shortDescription:
+//       "A flavorful, aromatic vegan curry packed with protein-rich chickpeas and fresh spinach.",
+//     cuisineType: "Indian",
+//     avgRating: 4.9,
+//     images: [
+//       "https://images.unsplash.com/photo-1547825407-2d060104b7c8?auto=format&fit=crop&q=80&w=600",
+//     ],
+//   },
+//   {
+//     _id: "4",
+//     title: "Mediterranean Quinoa Bowl",
+//     shortDescription:
+//       "A vibrant, healthy bowl loaded with cucumbers, olives, cherry tomatoes, and grilled feta cheese.",
+//     cuisineType: "Mediterranean",
+//     avgRating: 4.6,
+//     images: [
+//       "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&q=80&w=600",
+//     ],
+//   },
+// ];
 
 export default function RecipeDetailsPage({
   params,
@@ -111,7 +111,7 @@ export default function RecipeDetailsPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
   // Fetch Recipe details
   const {
@@ -123,6 +123,30 @@ export default function RecipeDetailsPage({
     queryFn: async () => {
       const response = await axios.get(`${apiUrl}/recipes/${id}`);
       return response.data?.data?.recipe || response.data?.data || response.data;
+    },
+  });
+
+  // Fetch related recipes (same cuisine, excluding current recipe)
+  const { data: relatedRecipes = [] } = useQuery<DetailedRecipe[]>({
+    queryKey: ["related-recipes", recipe?.cuisineType, id],
+    enabled: !!recipe,
+    queryFn: async () => {
+      const response = await axios.get(`${apiUrl}/recipes`);
+      const payload = response.data?.data ?? response.data;
+      const all: DetailedRecipe[] = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.recipes)
+          ? payload.recipes
+          : [];
+
+      const sameCuisine = all.filter(
+        (r) => r._id !== id && r.cuisineType === recipe?.cuisineType,
+      );
+
+      if (sameCuisine.length > 0) return sameCuisine.slice(0, 2);
+
+      // Fallback: no other recipe shares the cuisine, just show any 2 others
+      return all.filter((r) => r._id !== id).slice(0, 2);
     },
   });
 
@@ -495,38 +519,47 @@ export default function RecipeDetailsPage({
         </div>
       </div>
 
-      {/* Related Recipes Carousel */}
+     {/* Related Recipes Carousel */}
       <section className="border-t border-neutral-200/50 pt-10">
         <h3 className="font-poppins font-bold text-2xl text-secondary mb-6">
           Related Recipes
         </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-          {RELATED_RECIPES.map((rel) => (
-            <Link key={rel._id} href={`/recipes/${rel._id}`}>
-              <article className="pantry-card group cursor-pointer flex flex-col sm:flex-row gap-5 items-center justify-between">
-                <img
-                  src={rel.images[0]}
-                  alt={rel.title}
-                  className="w-full sm:w-32 h-28 object-cover rounded-xl"
-                />
-                <div className="flex-1 flex flex-col gap-1">
-                  <div className="flex items-center gap-1 text-accent">
-                    <Star className="h-3.5 w-3.5 fill-accent" />
-                    <span className="text-[10px] font-semibold text-text-brown">
-                      {rel.avgRating}
-                    </span>
+        {relatedRecipes.length === 0 ? (
+          <p className="text-sm text-text-brown/60">
+            No related recipes found yet.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+            {relatedRecipes.map((rel) => (
+              <Link key={rel._id} href={`/recipes/${rel._id}`}>
+                <article className="pantry-card group cursor-pointer flex flex-col sm:flex-row gap-5 items-center justify-between">
+                  <img
+                    src={
+                      rel.images?.[0] ||
+                      "https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&q=80&w=600"
+                    }
+                    alt={rel.title}
+                    className="w-full sm:w-32 h-28 object-cover rounded-xl"
+                  />
+                  <div className="flex-1 flex flex-col gap-1">
+                    <div className="flex items-center gap-1 text-accent">
+                      <Star className="h-3.5 w-3.5 fill-accent" />
+                      <span className="text-[10px] font-semibold text-text-brown">
+                        {rel.avgRating}
+                      </span>
+                    </div>
+                    <h4 className="font-poppins font-bold text-base text-secondary group-hover:text-primary transition-colors">
+                      {rel.title}
+                    </h4>
+                    <p className="text-text-brown/70 text-xs line-clamp-2 leading-relaxed">
+                      {rel.shortDescription}
+                    </p>
                   </div>
-                  <h4 className="font-poppins font-bold text-base text-secondary group-hover:text-primary transition-colors">
-                    {rel.title}
-                  </h4>
-                  <p className="text-text-brown/70 text-xs line-clamp-2 leading-relaxed">
-                    {rel.shortDescription}
-                  </p>
-                </div>
-              </article>
-            </Link>
-          ))}
-        </div>
+                </article>
+              </Link>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );
