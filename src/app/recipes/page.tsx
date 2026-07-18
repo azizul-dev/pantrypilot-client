@@ -14,7 +14,9 @@ import {
   ChevronLeft,
   ChevronRight,
   RotateCcw,
+  Heart,
 } from "lucide-react";
+import { useWishlist } from "@/hooks/useWishlist";
 
 interface Recipe {
   _id: string;
@@ -203,10 +205,10 @@ function buildPageRange(current: number, total: number): (number | "...")[] {
 }
 
 export default function ExploreRecipesPage() {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
-
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
   // Ref for smooth scroll target
   const gridRef = useRef<HTMLDivElement>(null);
+  const { isInWishlist, toggleWishlist } = useWishlist();
 
   // State
   const [searchQuery, setSearchQuery] = useState("");
@@ -559,6 +561,24 @@ export default function ExploreRecipesPage() {
                           {recipe.dietType}
                         </span>
                       </div>
+                      {/* Wishlist heart */}
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          toggleWishlist(recipe._id);
+                        }}
+                        aria-label="Toggle wishlist"
+                        className="absolute top-2 right-2 h-8 w-8 bg-white/90 backdrop-blur-sm rounded-full shadow-sm flex items-center justify-center text-neutral-400 hover:text-red-500 transition-colors"
+                      >
+                        <Heart
+                          className={`h-4 w-4 ${
+                            isInWishlist(recipe._id)
+                              ? "fill-red-500 text-red-500"
+                              : ""
+                          }`}
+                        />
+                      </button>
                     </div>
 
                     {/* Content */}

@@ -4,6 +4,7 @@ import { useState, use } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { useAuth } from "@/hooks/useAuth";
+import { useWishlist } from "@/hooks/useWishlist";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -164,8 +165,10 @@ export default function RecipeDetailsPage({
   });
 
   // Auth for submitting reviews
+  // Auth for submitting reviews
   const { token, isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
+  const { isInWishlist, toggleWishlist } = useWishlist();
 
   // Fetch real reviews for this recipe
   const { data: reviewsData } = useQuery<{ reviews: Review[]; total: number }>({
@@ -309,8 +312,18 @@ export default function RecipeDetailsPage({
               className="w-full h-full object-cover"
             />
             {/* Quick action: save */}
-            <button className="absolute top-4 right-4 h-10 w-10 bg-white/95 backdrop-blur-md rounded-full shadow-md flex items-center justify-center text-neutral-400 hover:text-red-500 transition-colors">
-              <Heart className="h-5 w-5 fill-current" />
+            <button
+              onClick={() => toggleWishlist(recipe._id)}
+              aria-label="Toggle wishlist"
+              className={`absolute top-4 right-4 h-10 w-10 bg-white/95 backdrop-blur-md rounded-full shadow-md flex items-center justify-center transition-colors ${
+                isInWishlist(recipe._id)
+                  ? "text-red-500"
+                  : "text-neutral-400 hover:text-red-500"
+              }`}
+            >
+              <Heart
+                className={`h-5 w-5 ${isInWishlist(recipe._id) ? "fill-current" : ""}`}
+              />
             </button>
           </div>
           {/* Thumbnails */}

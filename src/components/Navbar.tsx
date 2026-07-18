@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu, X, ChefHat, LogOut, PlusCircle, LayoutDashboard, LogIn, Sparkles } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { Menu, X, ChefHat, LogOut, PlusCircle, LayoutDashboard, LogIn, Sparkles, Heart } from "lucide-react";import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -57,6 +56,13 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-4">
             {isAuthenticated ? (
               <>
+                <Link
+                  href="/wishlist"
+                  className="flex items-center gap-1.5 text-sm font-medium text-secondary hover:text-primary transition-colors duration-200"
+                >
+                  <Heart className="h-4 w-4" />
+                  <span>Wishlist</span>
+                </Link>
                 <Link
                   href="/items/add"
                   className="flex items-center gap-1.5 text-sm font-medium text-secondary hover:text-primary transition-colors duration-200"
@@ -146,6 +152,14 @@ export default function Navbar() {
                 <div className="flex flex-col gap-4">
                   {isAuthenticated ? (
                     <>
+                      <Link
+                        href="/wishlist"
+                        onClick={toggleMenu}
+                        className="flex items-center gap-2.5 font-medium text-text-brown hover:text-primary"
+                      >
+                        <Heart className="h-5 w-5 text-secondary" />
+                        <span>Wishlist</span>
+                      </Link>
                       <Link
                         href="/items/add"
                         onClick={toggleMenu}

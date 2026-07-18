@@ -3,11 +3,13 @@
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { motion } from "framer-motion";
-import { Star, Clock } from "lucide-react";
+import { Star, Clock, Heart } from "lucide-react";
 import { Recipe } from "@/types/recipe";
+import { useWishlist } from "@/hooks/useWishlist";
 
 export default function FeaturedRecipesSection() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+  const { isInWishlist, toggleWishlist } = useWishlist();
 
   const { data: recipes = [], isLoading } = useQuery<Recipe[]>({
     queryKey: ["recipes", "featured"],
@@ -86,6 +88,21 @@ export default function FeaturedRecipesSection() {
                       {recipe.dietType}
                     </span>
                   </div>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      toggleWishlist(recipe._id);
+                    }}
+                    aria-label="Toggle wishlist"
+                    className="absolute top-2 right-2 h-8 w-8 bg-white/90 backdrop-blur-sm rounded-full shadow-sm flex items-center justify-center text-neutral-400 hover:text-red-500 transition-colors"
+                  >
+                    <Heart
+                      className={`h-4 w-4 ${
+                        isInWishlist(recipe._id) ? "fill-red-500 text-red-500" : ""
+                      }`}
+                    />
+                  </button>
                 </div>
 
                 <div className="flex-1 flex flex-col gap-2">
