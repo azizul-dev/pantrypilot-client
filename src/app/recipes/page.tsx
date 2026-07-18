@@ -549,9 +549,19 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
                         alt={`Photo of ${recipe.title}`}
                         width={600}
                         height={450}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                         loading="lazy"
+                        className="absolute inset-0 w-full h-full object-cover transition-opacity duration-300 group-hover:opacity-0"
                       />
+                      {recipe.images?.[1] && (
+                        <img
+                          src={recipe.images[1]}
+                          alt={`${recipe.title} alternate view`}
+                          width={600}
+                          height={450}
+                          loading="lazy"
+                          className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                        />
+                      )}
                       {/* Badges — fixed during hover */}
                       <div className="absolute top-2 left-2 flex gap-1.5 pointer-events-none">
                         <span className="bg-secondary text-white text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md leading-tight">

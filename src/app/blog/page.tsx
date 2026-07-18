@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Calendar, User, ArrowRight, PenSquare, Loader2 } from "lucide-react";
+import { Calendar, User, ArrowRight, PenSquare, Loader2, Search } from "lucide-react";
 
 interface BlogAuthor {
   _id: string;
@@ -31,23 +31,40 @@ export default function BlogPage() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  // Debounce search input
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 400);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
+
   const fetchPosts = useCallback(
-    async (pageToFetch: number, append: boolean) => {
+    async (pageToFetch: number, append: boolean, search: string) => {
       if (append) setIsLoadingMore(true);
       else setIsLoading(true);
       setErrorMsg("");
       try {
-        const response = await axios.get(`${apiUrl}/blogs`, {
-          params: { page: pageToFetch, limit: LIMIT },
-        });
+        const params: Record<string, string | number> = {
+          page: pageToFetch,
+          limit: LIMIT,
+        };
+        if (search) params.search = search;
+
+        const response = await axios.get(`${apiUrl}/blogs`, { params });
         const data = response.data?.data;
         if (!data) throw new Error("Unexpected response shape");
         setPosts((prev) => (append ? [...prev, ...data.posts] : data.posts));
         setTotalPages(data.totalPages || 1);
+        setTotal(data.total || 0);
         setPage(pageToFetch);
       } catch (err) {
         console.error("Failed to fetch blog posts:", err);
@@ -60,13 +77,14 @@ export default function BlogPage() {
     [apiUrl]
   );
 
+  // Refetch from page 1 whenever the debounced search term changes
   useEffect(() => {
-    fetchPosts(1, false);
+    fetchPosts(1, false, debouncedSearch);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [debouncedSearch]);
 
   const handleLoadMore = () => {
-    if (page < totalPages) fetchPosts(page + 1, true);
+    if (page < totalPages) fetchPosts(page + 1, true, debouncedSearch);
   };
 
   const formatDate = (iso: string) =>
@@ -88,7 +106,11 @@ export default function BlogPage() {
     show: { opacity: 1, y: 0, transition: { duration: 0.5 } },
   };
 
+  // Only show the big "Featured" hero when not actively searching
+  const isSearching = debouncedSearch.trim().length > 0;
+  const showFeaturedHero = !isSearching && posts.length > 1;
   const [featured, ...rest] = posts;
+  const gridPosts = showFeaturedHero ? rest : posts;
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 lg:py-24 flex flex-col gap-12">
@@ -110,6 +132,27 @@ export default function BlogPage() {
         </Link>
       </div>
 
+      {/* Search Bar */}
+      <div className="relative max-w-xl w-full">
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-neutral-400 pointer-events-none" />
+        <input
+          type="text"
+          placeholder="Search posts by title, topic, or keyword..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          aria-label="Search blog posts"
+          className="w-full rounded-2xl border border-neutral-300 bg-white pl-10 pr-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-xs"
+        />
+      </div>
+
+      {!isLoading && !errorMsg && isSearching && (
+        <p className="text-xs text-text-brown/55 font-medium -mt-6">
+          {total === 0
+            ? `No posts found for "${debouncedSearch}".`
+            : `Found ${total} post${total !== 1 ? "s" : ""} for "${debouncedSearch}"`}
+        </p>
+      )}
+
       {isLoading && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -127,7 +170,7 @@ export default function BlogPage() {
         <div className="text-center py-16 bg-white rounded-2xl border border-neutral-200/50 flex flex-col items-center gap-3">
           <p className="text-sm text-text-brown/70">{errorMsg}</p>
           <button
-            onClick={() => fetchPosts(1, false)}
+            onClick={() => fetchPosts(1, false, debouncedSearch)}
             className="text-primary font-semibold text-sm hover:underline"
           >
             Try again
@@ -135,7 +178,7 @@ export default function BlogPage() {
         </div>
       )}
 
-      {!isLoading && !errorMsg && posts.length === 0 && (
+      {!isLoading && !errorMsg && posts.length === 0 && !isSearching && (
         <div className="text-center py-20 bg-white rounded-2xl border border-neutral-200/50 flex flex-col items-center gap-4">
           <span className="text-5xl" role="img" aria-label="empty">📝</span>
           <h3 className="font-poppins font-bold text-lg text-secondary">No Posts Yet</h3>
@@ -151,7 +194,17 @@ export default function BlogPage() {
         </div>
       )}
 
-      {!isLoading && featured && (
+      {!isLoading && !errorMsg && posts.length === 0 && isSearching && (
+        <div className="text-center py-20 bg-white rounded-2xl border border-neutral-200/50 flex flex-col items-center gap-4">
+          <span className="text-5xl" role="img" aria-label="searching">🔍</span>
+          <h3 className="font-poppins font-bold text-lg text-secondary">No Matching Posts</h3>
+          <p className="text-sm text-text-brown/65 max-w-sm">
+            Try a different search term.
+          </p>
+        </div>
+      )}
+
+      {!isLoading && showFeaturedHero && featured && (
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -204,14 +257,14 @@ export default function BlogPage() {
         </motion.div>
       )}
 
-      {!isLoading && rest.length > 0 && (
+      {!isLoading && gridPosts.length > 0 && (
         <motion.div
           variants={container}
           initial="hidden"
           animate="show"
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
         >
-          {rest.map((post) => (
+          {gridPosts.map((post) => (
             <motion.article
               key={post._id}
               variants={item}
