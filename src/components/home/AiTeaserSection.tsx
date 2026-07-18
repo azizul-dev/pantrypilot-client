@@ -1,14 +1,30 @@
 "use client";
 
 import { useState } from "react";
+import axios from "axios";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Plus, Trash2 } from "lucide-react";
+import { Sparkles, Plus, Trash2, LogIn } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+
+interface RecipeSuggestion {
+  recipeId: string;
+  title: string;
+  matchScore: number;
+  reasoning: string;
+  missingIngredients: string[];
+  canMakeWith: string[];
+}
 
 export default function AiTeaserSection() {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+  const { token, isAuthenticated } = useAuth();
+
   const [teaserIngredients, setTeaserIngredients] = useState<string[]>(["Chicken", "Garlic", "Spinach"]);
   const [newIngredient, setNewIngredient] = useState("");
-  const [teaserResult, setTeaserResult] = useState<any>(null);
+  const [teaserResult, setTeaserResult] = useState<RecipeSuggestion | null>(null);
   const [isTeaserLoading, setIsTeaserLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const addIngredient = (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,19 +38,42 @@ export default function AiTeaserSection() {
     setTeaserIngredients(teaserIngredients.filter((i) => i !== ing));
   };
 
-  const handleGenerateTeaser = () => {
+  const handleGenerateTeaser = async () => {
     if (teaserIngredients.length === 0) return;
+
+    if (!isAuthenticated || !token) {
+      setError("Please log in to try the real AI suggestion engine.");
+      return;
+    }
+
     setIsTeaserLoading(true);
-    setTimeout(() => {
-      setTeaserResult({
-        title: "Tuscan Garlic Spinach Stir-Fry",
-        matchPercentage: 94,
-        extraRequired: ["Olive Oil", "Cream"],
-        time: "20 mins",
-        difficulty: "Easy",
-      });
+    setError("");
+    setTeaserResult(null);
+
+    try {
+      const response = await axios.post(
+        `${apiUrl}/ai/suggest-recipes`,
+        { ingredients: teaserIngredients },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const suggestions: RecipeSuggestion[] = response.data?.data?.suggestions || [];
+      if (suggestions.length > 0) {
+        // Show the single best match for the teaser
+        setTeaserResult(suggestions[0]);
+      } else {
+        setError("No matching recipes found for these ingredients yet.");
+      }
+    } catch (err) {
+      console.error("AI teaser request failed:", err);
+      const message =
+        axios.isAxiosError(err) && err.response?.data?.message
+          ? err.response.data.message
+          : "Couldn't reach the AI engine right now. Please try again.";
+      setError(message);
+    } finally {
       setIsTeaserLoading(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -96,6 +135,20 @@ export default function AiTeaserSection() {
             ))}
           </div>
 
+          {error && (
+            <div className="mt-4 flex items-center justify-between gap-3 text-xs bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-xl">
+              <span>{error}</span>
+              {!isAuthenticated && (
+                <Link
+                  href="/login"
+                  className="shrink-0 inline-flex items-center gap-1 font-semibold text-primary hover:underline"
+                >
+                  <LogIn className="h-3.5 w-3.5" /> Log in
+                </Link>
+              )}
+            </div>
+          )}
+
           <button
             onClick={handleGenerateTeaser}
             disabled={teaserIngredients.length === 0 || isTeaserLoading}
@@ -125,23 +178,24 @@ export default function AiTeaserSection() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <h4 className="font-poppins font-bold text-lg text-secondary">{teaserResult.title}</h4>
                   <span className="bg-accent/20 text-text-brown text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1">
-                    🔥 {teaserResult.matchPercentage}% Ingredient Match
+                    🔥 {teaserResult.matchScore}% Ingredient Match
                   </span>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
-                  <div className="bg-white p-3 rounded-xl border border-neutral-100">
-                    <span className="text-text-brown/50 block mb-1">Time</span>
-                    <strong className="text-secondary">{teaserResult.time}</strong>
+                <p className="text-sm text-text-brown/80 italic bg-white p-4 rounded-xl border border-neutral-100">
+                  "{teaserResult.reasoning}"
+                </p>
+                {teaserResult.missingIngredients.length > 0 && (
+                  <div className="bg-white p-3 rounded-xl border border-neutral-100 text-xs">
+                    <span className="text-text-brown/50 block mb-1">Missing Pantry Items</span>
+                    <strong className="text-primary">{teaserResult.missingIngredients.join(", ")}</strong>
                   </div>
-                  <div className="bg-white p-3 rounded-xl border border-neutral-100">
-                    <span className="text-text-brown/50 block mb-1">Difficulty</span>
-                    <strong className="text-secondary">{teaserResult.difficulty}</strong>
-                  </div>
-                  <div className="col-span-2 sm:col-span-1 bg-white p-3 rounded-xl border border-neutral-100">
-                    <span className="text-text-brown/50 block mb-1">Missing Pantry items</span>
-                    <strong className="text-primary">{teaserResult.extraRequired.join(", ")}</strong>
-                  </div>
-                </div>
+                )}
+                <Link
+                  href="/suggest"
+                  className="text-xs font-semibold text-primary hover:underline self-start"
+                >
+                  See more suggestions on the full AI Suggest page →
+                </Link>
               </motion.div>
             )}
           </AnimatePresence>

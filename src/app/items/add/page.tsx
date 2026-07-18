@@ -21,7 +21,7 @@ import {
 export default function AddRecipePage() {
   const router = useRouter();
   const { token, isAuthenticated } = useAuth();
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
   // Form State
   const [title, setTitle] = useState("");

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import axios from "axios";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -41,153 +42,6 @@ interface PaginatedResponse {
 
 const LIMIT = 12;
 
-const FALLBACK_RECIPES: Recipe[] = [
-  {
-    _id: "1",
-    title: "Creamy Tuscan Garlic Chicken",
-    shortDescription: "Tender chicken breasts simmered in a rich garlic, spinach, and sun-dried tomato cream sauce.",
-    cuisineType: "Italian",
-    dietType: "non-veg",
-    cookTime: 30,
-    difficulty: "easy",
-    avgRating: 4.8,
-    totalReviews: 124,
-    images: ["https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&q=80&w=600"],
-  },
-  {
-    _id: "2",
-    title: "Spiced Chickpea & Spinach Curry",
-    shortDescription: "A flavorful, aromatic vegan curry packed with protein-rich chickpeas and fresh spinach.",
-    cuisineType: "Indian",
-    dietType: "vegan",
-    cookTime: 25,
-    difficulty: "easy",
-    avgRating: 4.9,
-    totalReviews: 89,
-    images: ["https://images.unsplash.com/photo-1547825407-2d060104b7c8?auto=format&fit=crop&q=80&w=600"],
-  },
-  {
-    _id: "3",
-    title: "Classic Mexican Street Tacos",
-    shortDescription: "Street-style corn tortillas topped with seasoned grilled steak, fresh onions, and cilantro.",
-    cuisineType: "Mexican",
-    dietType: "non-veg",
-    cookTime: 20,
-    difficulty: "medium",
-    avgRating: 4.7,
-    totalReviews: 156,
-    images: ["https://images.unsplash.com/photo-1565299585323-38d6b0865b47?auto=format&fit=crop&q=80&w=600"],
-  },
-  {
-    _id: "4",
-    title: "Mediterranean Quinoa Bowl",
-    shortDescription: "A vibrant, healthy bowl loaded with cucumbers, olives, cherry tomatoes, and grilled feta cheese.",
-    cuisineType: "Mediterranean",
-    dietType: "veg",
-    cookTime: 15,
-    difficulty: "easy",
-    avgRating: 4.6,
-    totalReviews: 72,
-    images: ["https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&q=80&w=600"],
-  },
-  {
-    _id: "5",
-    title: "Crispy Sesame Tofu Stir-Fry",
-    shortDescription: "Golden tofu chunks tossed with fresh bell peppers and broccoli in a savory sweet sesame glaze.",
-    cuisineType: "Asian",
-    dietType: "vegan",
-    cookTime: 20,
-    difficulty: "medium",
-    avgRating: 4.8,
-    totalReviews: 64,
-    images: ["https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=600"],
-  },
-  {
-    _id: "6",
-    title: "French Onion Soup Gratinee",
-    shortDescription: "Rich beef broth packed with caramelized onions and topped with toasted baguette and melted Gruyere.",
-    cuisineType: "French",
-    dietType: "non-veg",
-    cookTime: 50,
-    difficulty: "hard",
-    avgRating: 4.9,
-    totalReviews: 95,
-    images: ["https://images.unsplash.com/photo-1547592165-e1d17f97a15a?auto=format&fit=crop&q=80&w=600"],
-  },
-  {
-    _id: "7",
-    title: "Hearty Lentil Shepherd's Pie",
-    shortDescription: "Comforting classic featuring savory green lentils and veggies topped with fluffy mashed potatoes.",
-    cuisineType: "British",
-    dietType: "veg",
-    cookTime: 45,
-    difficulty: "medium",
-    avgRating: 4.7,
-    totalReviews: 83,
-    images: ["https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=600"],
-  },
-  {
-    _id: "8",
-    title: "Fresh Berry Summer Galette",
-    shortDescription: "A rustic, buttery pastry folded over sweet and juicy strawberries, blueberries, and raspberries.",
-    cuisineType: "Baking",
-    dietType: "veg",
-    cookTime: 40,
-    difficulty: "medium",
-    avgRating: 4.8,
-    totalReviews: 110,
-    images: ["https://images.unsplash.com/photo-1519915028121-7d3463d20b13?auto=format&fit=crop&q=80&w=600"],
-  },
-  {
-    _id: "9",
-    title: "Korean Bulgogi BBQ Bowl",
-    shortDescription: "Thinly sliced marinated beef grilled to perfection and served over steamed jasmine rice.",
-    cuisineType: "Korean",
-    dietType: "non-veg",
-    cookTime: 35,
-    difficulty: "medium",
-    avgRating: 4.9,
-    totalReviews: 132,
-    images: ["https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&q=80&w=600"],
-  },
-  {
-    _id: "10",
-    title: "Avocado & Black Bean Burritos",
-    shortDescription: "Hearty burritos packed with creamy avocado, seasoned black beans, salsa, and fresh cilantro.",
-    cuisineType: "Mexican",
-    dietType: "vegan",
-    cookTime: 18,
-    difficulty: "easy",
-    avgRating: 4.6,
-    totalReviews: 77,
-    images: ["https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=600"],
-  },
-  {
-    _id: "11",
-    title: "Thai Green Papaya Salad",
-    shortDescription: "A refreshing, crunchy salad with shredded green papaya, lime dressing, peanuts, and chili.",
-    cuisineType: "Thai",
-    dietType: "vegan",
-    cookTime: 12,
-    difficulty: "easy",
-    avgRating: 4.5,
-    totalReviews: 51,
-    images: ["https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?auto=format&fit=crop&q=80&w=600"],
-  },
-  {
-    _id: "12",
-    title: "Classic Eggs Benedict",
-    shortDescription: "Perfectly poached eggs on toasted English muffins with Canadian bacon and hollandaise sauce.",
-    cuisineType: "American",
-    dietType: "non-veg",
-    cookTime: 22,
-    difficulty: "hard",
-    avgRating: 4.7,
-    totalReviews: 98,
-    images: ["https://images.unsplash.com/photo-1608039829572-78524f79c4c7?auto=format&fit=crop&q=80&w=600"],
-  },
-];
-
 /** Build a page range array with ellipsis */
 function buildPageRange(current: number, total: number): (number | "...")[] {
   if (total <= 7) {
@@ -209,11 +63,12 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
   // Ref for smooth scroll target
   const gridRef = useRef<HTMLDivElement>(null);
   const { isInWishlist, toggleWishlist } = useWishlist();
+  const searchParams = useSearchParams();
 
   // State
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [selectedCuisine, setSelectedCuisine] = useState("All");
+  const [selectedCuisine, setSelectedCuisine] = useState(searchParams.get("cuisine") || "All");
   const [selectedDiet, setSelectedDiet] = useState("All");
   const [maxCookTime, setMaxCookTime] = useState(120);
   const [sortBy, setSortBy] = useState("newest");
@@ -230,7 +85,7 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
   }, [searchQuery]);
 
   // Fetch from backend with page + limit
-  const { data, isLoading, isFetching } = useQuery<PaginatedResponse>({
+  const { data, isLoading, isFetching, isError } = useQuery<PaginatedResponse>({
     queryKey: ["explore-recipes", debouncedSearch, selectedCuisine, selectedDiet, maxCookTime, sortBy, currentPage],
     queryFn: async () => {
       try {
@@ -269,35 +124,9 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
           };
         }
         throw new Error("Unexpected response shape");
-      } catch {
-        // Client-side fallback: filter & paginate the fallback data set
-        let filtered = FALLBACK_RECIPES.filter((r) => {
-          const matchSearch =
-            !debouncedSearch ||
-            r.title.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-            r.shortDescription.toLowerCase().includes(debouncedSearch.toLowerCase());
-          const matchCuisine = selectedCuisine === "All" || r.cuisineType.toLowerCase() === selectedCuisine.toLowerCase();
-          const matchDiet = selectedDiet === "All" || r.dietType.toLowerCase() === selectedDiet.toLowerCase();
-          const matchTime = r.cookTime <= maxCookTime;
-          return matchSearch && matchCuisine && matchDiet && matchTime;
-        });
-
-        filtered = [...filtered].sort((a, b) => {
-          if (sortBy === "rating") return b.avgRating - a.avgRating;
-          if (sortBy === "cookTime") return a.cookTime - b.cookTime;
-          return b._id.localeCompare(a._id);
-        });
-
-        const totalPages = Math.max(1, Math.ceil(filtered.length / LIMIT));
-        const safePage = Math.min(currentPage, totalPages);
-        const start = (safePage - 1) * LIMIT;
-        return {
-          data: filtered.slice(start, start + LIMIT),
-          total: filtered.length,
-          page: safePage,
-          limit: LIMIT,
-          totalPages,
-        };
+      } catch (err) {
+        console.error("Failed to fetch recipes:", err);
+        throw err;
       }
     },
     placeholderData: keepPreviousData,
@@ -503,7 +332,21 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
       {/* Recipe Grid — scroll target */}
       <div ref={gridRef} className="scroll-mt-24">
         {/* Skeleton Loader */}
-        {isGridBusy ? (
+        {isError ? (
+          <div className="text-center py-20 bg-white rounded-2xl border border-neutral-200/50 flex flex-col items-center gap-4">
+            <span className="text-5xl" role="img" aria-label="error">⚠️</span>
+            <h3 className="font-poppins font-bold text-lg text-secondary">Couldn&apos;t Load Recipes</h3>
+            <p className="text-sm text-text-brown/65 max-w-sm">
+              Something went wrong while fetching recipes from the server. Please check your connection and try again.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-primary hover:bg-primary/90 active:bg-primary text-white font-semibold px-6 py-2.5 rounded-xl text-sm transition-all"
+            >
+              Retry
+            </button>
+          </div>
+        ) : isGridBusy ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {Array.from({ length: LIMIT }).map((_, i) => (
               <div key={i} className="bg-white rounded-2xl p-5 shadow-sm border border-neutral-100 animate-pulse flex flex-col gap-3">

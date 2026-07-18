@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChefHat, Mail, Phone, MapPin } from "lucide-react";
+import { ChefHat, Mail, MapPin } from "lucide-react";
 
 export default function Footer() {
   const quickLinks = [
@@ -12,12 +12,12 @@ export default function Footer() {
     { label: "Contact", href: "/contact" },
   ];
 
-  const categories = [
-    { label: "Quick & Easy", href: "#explore" },
-    { label: "Healthy Eats", href: "#explore" },
-    { label: "Vegetarian", href: "#explore" },
-    { label: "Baking & Desserts", href: "#explore" },
-    { label: "Meal Prep", href: "#explore" },
+  const dietCategories = [
+    { label: "Vegetarian", href: "/recipes?diet=veg" },
+    { label: "Vegan", href: "/recipes?diet=vegan" },
+    { label: "Non-Vegetarian", href: "/recipes?diet=non-veg" },
+    { label: "AI Suggestions", href: "/suggest" },
+    { label: "Wishlist", href: "/wishlist" },
   ];
 
   const socials = [
@@ -114,7 +114,7 @@ export default function Footer() {
           <div>
             <h3 className="font-poppins font-semibold text-white text-base mb-4 tracking-wide">Categories</h3>
             <ul className="space-y-2.5 text-sm">
-              {categories.map((cat) => (
+              {dietCategories.map((cat) => (
                 <li key={cat.label}>
                   <Link
                     href={cat.href}
@@ -131,17 +131,15 @@ export default function Footer() {
           <div>
             <h3 className="font-poppins font-semibold text-white text-base mb-4 tracking-wide">Contact Us</h3>
             <ul className="space-y-3 text-sm text-neutral-400">
-              <li className="flex items-start gap-3">
-                <MapPin className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                <span>123 Culinary Drive, Foodie City, FC 90210</span>
-              </li>
-              <li className="flex items-center gap-3">
-                <Phone className="h-4 w-4 text-primary shrink-0" />
-                <span>+1 (555) 123-4567</span>
-              </li>
               <li className="flex items-center gap-3">
                 <Mail className="h-4 w-4 text-primary shrink-0" />
-                <span>hello@pantrypilot.com</span>
+                <a href="mailto:hello@pantrypilot.com" className="hover:text-primary transition-colors">
+                  hello@pantrypilot.com
+                </a>
+              </li>
+              <li className="flex items-start gap-3">
+                <MapPin className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                <span>Remote-first team — reach us by email anytime.</span>
               </li>
             </ul>
           </div>
@@ -150,9 +148,9 @@ export default function Footer() {
         <div className="border-t border-neutral-800 mt-12 pt-8 flex flex-col md:flex-row items-center justify-between text-xs text-neutral-500 gap-4">
           <p>&copy; {new Date().getFullYear()} PantryPilot. All rights reserved.</p>
           <div className="flex gap-6">
-            <Link href="#privacy" className="hover:text-neutral-300">Privacy Policy</Link>
-            <Link href="#terms" className="hover:text-neutral-300">Terms of Service</Link>
-            <Link href="#cookies" className="hover:text-neutral-300">Cookie Settings</Link>
+            <Link href="/privacy" className="hover:text-neutral-300">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-neutral-300">Terms of Service</Link>
+            <Link href="/cookies" className="hover:text-neutral-300">Cookie Settings</Link>
           </div>
         </div>
       </div>

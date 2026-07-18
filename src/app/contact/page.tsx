@@ -72,21 +72,8 @@ export default function ContactPage() {
               Headquarters
             </div>
             <p className="text-text-brown/70 text-sm">
-              123 Culinary Ave, Suite 400<br />
-              San Francisco, CA 94110
+              We're a remote-first team — reach us anytime via email or the form below.
             </p>
-            {/* Fake Map Container */}
-            <div className="w-full h-64 bg-neutral-200 rounded-2xl overflow-hidden relative mt-2 border border-neutral-300 flex items-center justify-center">
-              <div className="absolute inset-0 opacity-30 flex items-center justify-center" style={{ backgroundImage: "radial-gradient(#CBD5E1 1px, transparent 1px)", backgroundSize: "20px 20px" }}></div>
-              <div className="flex flex-col items-center gap-2 text-neutral-500 z-10">
-                <Map className="h-8 w-8" />
-                <span className="text-sm font-medium">Interactive Map Placeholder</span>
-              </div>
-              {/* Marker pin */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full z-20">
-                <MapPin className="h-8 w-8 text-primary fill-primary/20" />
-              </div>
-            </div>
           </motion.div>
         </motion.div>
 

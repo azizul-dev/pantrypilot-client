@@ -4,32 +4,63 @@ import { useState, useEffect, useRef } from "react";
 import { BookOpen, Users, Globe2 } from "lucide-react";
 
 export default function StatsSection() {
+  const [targets, setTargets] = useState({ recipes: 0, users: 0, cuisines: 0 });
   const [stats, setStats] = useState({ recipes: 0, users: 0, cuisines: 0 });
   const statsSectionRef = useRef<HTMLDivElement>(null);
   const [statsAnimated, setStatsAnimated] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
+  // ─── Fetch real stats from backend ────────────────────────────────────────
   useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const apiUrl =
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+        const res = await fetch(`${apiUrl}/stats`);
+        const json = await res.json();
+        if (res.ok && json?.data) {
+          setTargets({
+            recipes: json.data.recipes,
+            users: json.data.users,
+            cuisines: json.data.cuisines,
+          });
+        }
+      } catch (err) {
+        console.error("Failed to fetch stats:", err);
+      } finally {
+        setLoaded(true);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  // ─── Animate counters once visible AND data has loaded ───────────────────
+  useEffect(() => {
+    if (!loaded) return;
+
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && !statsAnimated) {
           setStatsAnimated(true);
+          const { recipes, users, cuisines } = targets;
           let startRecipes = 0;
           let startUsers = 0;
           let startCuisines = 0;
           const duration = 2000;
           const intervalTime = 30;
-          const stepRecipes = Math.ceil(12400 / (duration / intervalTime));
-          const stepUsers = Math.ceil(48000 / (duration / intervalTime));
-          const stepCuisines = Math.ceil(35 / (duration / intervalTime));
+          const steps = Math.max(1, Math.round(duration / intervalTime));
+          const stepRecipes = Math.max(1, Math.ceil(recipes / steps));
+          const stepUsers = Math.max(1, Math.ceil(users / steps));
+          const stepCuisines = Math.max(1, Math.ceil(cuisines / steps));
 
           const counter = setInterval(() => {
-            startRecipes = Math.min(startRecipes + stepRecipes, 12400);
-            startUsers = Math.min(startUsers + stepUsers, 48000);
-            startCuisines = Math.min(startCuisines + stepCuisines, 35);
+            startRecipes = Math.min(startRecipes + stepRecipes, recipes);
+            startUsers = Math.min(startUsers + stepUsers, users);
+            startCuisines = Math.min(startCuisines + stepCuisines, cuisines);
 
             setStats({ recipes: startRecipes, users: startUsers, cuisines: startCuisines });
 
-            if (startRecipes === 12400 && startUsers === 48000 && startCuisines === 35) {
+            if (startRecipes === recipes && startUsers === users && startCuisines === cuisines) {
               clearInterval(counter);
             }
           }, intervalTime);
@@ -42,7 +73,7 @@ export default function StatsSection() {
       observer.observe(statsSectionRef.current);
     }
     return () => observer.disconnect();
-  }, [statsAnimated]);
+  }, [statsAnimated, loaded, targets]);
 
   return (
     <section ref={statsSectionRef} className="py-16 bg-secondary text-white relative overflow-hidden">
