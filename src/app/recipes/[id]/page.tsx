@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, use } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
+import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -37,6 +38,18 @@ interface DetailedRecipe {
   avgRating: number;
   totalReviews: number;
   createdAt: string;
+}
+
+interface Review {
+  _id: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+  userId: {
+    _id: string;
+    name: string;
+    avatar?: string;
+  };
 }
 
 const FALLBACK_DETAILED_RECIPES: Record<string, DetailedRecipe> = {
@@ -149,6 +162,71 @@ export default function RecipeDetailsPage({
       return all.filter((r) => r._id !== id).slice(0, 2);
     },
   });
+
+  // Auth for submitting reviews
+  const { token, isAuthenticated } = useAuth();
+  const queryClient = useQueryClient();
+
+  // Fetch real reviews for this recipe
+  const { data: reviewsData } = useQuery<{ reviews: Review[]; total: number }>({
+    queryKey: ["recipe-reviews", id],
+    queryFn: async () => {
+      const response = await axios.get(`${apiUrl}/reviews/recipe/${id}`);
+      return response.data?.data || { reviews: [], total: 0 };
+    },
+  });
+
+  const reviews = reviewsData?.reviews || [];
+
+  const ratingBreakdown = [5, 4, 3, 2, 1].map((stars) => {
+    const count = reviews.filter((r) => r.rating === stars).length;
+    const percent =
+      reviews.length > 0 ? Math.round((count / reviews.length) * 100) : 0;
+    return { stars, percent };
+  });
+
+  // Review submission form state
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewError, setReviewError] = useState("");
+
+  const submitReviewMutation = useMutation({
+    mutationFn: async () => {
+      const response = await axios.post(
+        `${apiUrl}/reviews`,
+        { recipeId: id, rating: reviewRating, comment: reviewComment },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      return response.data;
+    },
+    onSuccess: () => {
+      setReviewComment("");
+      setReviewRating(5);
+      setReviewError("");
+      queryClient.invalidateQueries({ queryKey: ["recipe-reviews", id] });
+      queryClient.invalidateQueries({ queryKey: ["recipe-details", id] });
+    },
+    onError: (err: unknown) => {
+      const message =
+        axios.isAxiosError(err) && err.response?.data?.message
+          ? err.response.data.message
+          : "Couldn't submit your review. Please try again.";
+      setReviewError(message);
+    },
+  });
+
+  const handleSubmitReview = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isAuthenticated || !token) {
+      setReviewError("Please log in to leave a review.");
+      return;
+    }
+    if (reviewComment.trim().length < 5) {
+      setReviewError("Comment must be at least 5 characters.");
+      return;
+    }
+    submitReviewMutation.mutate();
+  };
 
   // Carousel Image State
   const [activeImageIdx, setActiveImageIdx] = useState(0);
@@ -457,63 +535,115 @@ export default function RecipeDetailsPage({
                 </span>
               </div>
               <div className="flex-1 w-full flex flex-col gap-2">
-                {[5, 4, 3, 2, 1].map((stars) => (
+                {ratingBreakdown.map(({ stars, percent }) => (
                   <div key={stars} className="flex items-center gap-3 text-xs">
                     <span className="w-3 text-right">{stars}</span>
                     <Star className="h-3 w-3 fill-accent text-accent" />
                     <div className="flex-1 h-2 bg-neutral-100 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-primary"
-                        style={{
-                          width: `${stars === 5 ? 75 : stars === 4 ? 15 : stars === 3 ? 7 : 3}%`,
-                        }}
+                        style={{ width: `${percent}%` }}
                       />
                     </div>
-                    <span className="w-8 text-neutral-400">
-                      {stars === 5
-                        ? "75%"
-                        : stars === 4
-                          ? "15%"
-                          : stars === 3
-                            ? "7%"
-                            : "3%"}
-                    </span>
+                    <span className="w-8 text-neutral-400">{percent}%</span>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Testimonial Review item */}
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1.5 p-4 bg-bg-cream rounded-xl border border-neutral-100">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <span className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs uppercase">
-                      JD
-                    </span>
-                    <div>
-                      <h4 className="font-bold text-xs text-secondary">
-                        Jane Doe
-                      </h4>
-                      <div className="flex gap-0.5 text-accent">
-                        <Star className="h-3 w-3 fill-accent text-accent" />
-                        <Star className="h-3 w-3 fill-accent text-accent" />
-                        <Star className="h-3 w-3 fill-accent text-accent" />
-                        <Star className="h-3 w-3 fill-accent text-accent" />
-                        <Star className="h-3 w-3 fill-accent text-accent" />
-                      </div>
-                    </div>
-                  </div>
-                  <span className="text-[10px] text-text-brown/50">
-                    2 days ago
-                  </span>
-                </div>
-                <p className="text-xs text-text-brown/80 leading-relaxed mt-2 pl-10">
-                  Absolutely loved this chicken! It was so juicy and the Tuscan
-                  garlic cream sauce was incredible. My entire family went back
-                  for seconds. Highly recommend!
-                </p>
+            {/* Write a Review */}
+            <form
+              onSubmit={handleSubmitReview}
+              className="flex flex-col gap-3 p-4 bg-bg-cream rounded-xl border border-neutral-100"
+            >
+              <h4 className="font-bold text-xs text-secondary uppercase tracking-wider">
+                Write a Review
+              </h4>
+              <div className="flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setReviewRating(star)}
+                    className="p-0.5"
+                  >
+                    <Star
+                      className={`h-5 w-5 ${
+                        star <= reviewRating
+                          ? "fill-accent text-accent"
+                          : "text-neutral-300"
+                      }`}
+                    />
+                  </button>
+                ))}
               </div>
+              <textarea
+                value={reviewComment}
+                onChange={(e) => setReviewComment(e.target.value)}
+                placeholder="Share your experience cooking this recipe..."
+                rows={3}
+                className="w-full text-sm border border-neutral-200 rounded-lg p-3 outline-none focus:ring-2 focus:ring-primary/50 bg-white"
+              />
+              {reviewError && (
+                <p className="text-xs text-red-500">{reviewError}</p>
+              )}
+              <button
+                type="submit"
+                disabled={submitReviewMutation.isPending}
+                className="self-start bg-primary hover:bg-primary/95 text-white font-semibold px-5 py-2 rounded-lg text-xs transition-all disabled:opacity-50"
+              >
+                {submitReviewMutation.isPending
+                  ? "Submitting..."
+                  : "Submit Review"}
+              </button>
+            </form>
+
+            {/* Review List */}
+            <div className="flex flex-col gap-4">
+              {reviews.length === 0 ? (
+                <p className="text-sm text-text-brown/60">
+                  No reviews yet. Be the first to share your experience!
+                </p>
+              ) : (
+                reviews.map((review) => (
+                  <div
+                    key={review._id}
+                    className="flex flex-col gap-1.5 p-4 bg-bg-cream rounded-xl border border-neutral-100"
+                  >
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <span className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs uppercase">
+                          {review.userId?.name?.charAt(0) || "?"}
+                        </span>
+                        <div>
+                          <h4 className="font-bold text-xs text-secondary">
+                            {review.userId?.name || "Anonymous"}
+                          </h4>
+                          <div className="flex gap-0.5 text-accent">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star
+                                key={star}
+                                className={`h-3 w-3 ${
+                                  star <= review.rating
+                                    ? "fill-accent text-accent"
+                                    : "text-neutral-300"
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      <span className="text-[10px] text-text-brown/50">
+                        {new Date(review.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <p className="text-xs text-text-brown/80 leading-relaxed mt-2 pl-10">
+                      {review.comment}
+                    </p>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
