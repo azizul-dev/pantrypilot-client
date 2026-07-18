@@ -64,6 +64,34 @@ export const authOptions: NextAuthOptions = {
     signIn: "/login",
   },
   callbacks: {
+    async signIn({ user, account }) {
+      if (account?.provider === "google") {
+        try {
+          const apiUrl =
+            process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+          const res = await fetch(`${apiUrl}/auth/google`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: user.email,
+              name: user.name,
+              avatar: user.image,
+              googleId: account.providerAccountId,
+            }),
+          });
+          const json = await res.json();
+          if (!res.ok || !json?.data?.token) {
+            return false;
+          }
+          (user as any).id = json.data.user._id || json.data.user.id;
+          (user as any).backendToken = json.data.token;
+        } catch (err) {
+          console.error("Google backend auth failed:", err);
+          return false;
+        }
+      }
+      return true;
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
