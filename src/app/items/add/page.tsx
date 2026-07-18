@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/hooks/useAuth";
 import {
   ChefHat,
   Plus,
@@ -14,20 +15,21 @@ import {
   FileText,
   Clock,
   Compass,
-  FileImage
+  FileImage,
 } from "lucide-react";
 
 export default function AddRecipePage() {
   const router = useRouter();
+  const { token, isAuthenticated } = useAuth();
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
   // Form State
   const [title, setTitle] = useState("");
   const [shortDescription, setShortDescription] = useState("");
   const [fullDescription, setFullDescription] = useState("");
-  const [ingredients, setIngredients] = useState<{ name: string; quantity: string }[]>([
-    { name: "", quantity: "" },
-  ]);
+  const [ingredients, setIngredients] = useState<
+    { name: string; quantity: string }[]
+  >([{ name: "", quantity: "" }]);
   const [steps, setSteps] = useState<string[]>([""]);
   const [cuisineType, setCuisineType] = useState("");
   const [dietType, setDietType] = useState<"veg" | "non-veg" | "vegan">("veg");
@@ -35,7 +37,9 @@ export default function AddRecipePage() {
   const [imageUrl, setImageUrl] = useState("");
 
   // AI Assistant State
-  const [aiLength, setAiLength] = useState<"short" | "medium" | "long">("medium");
+  const [aiLength, setAiLength] = useState<"short" | "medium" | "long">(
+    "medium",
+  );
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [hasGenerated, setHasGenerated] = useState(false);
 
@@ -54,7 +58,11 @@ export default function AddRecipePage() {
     }
   };
 
-  const handleIngredientChange = (idx: number, field: "name" | "quantity", value: string) => {
+  const handleIngredientChange = (
+    idx: number,
+    field: "name" | "quantity",
+    value: string,
+  ) => {
     const updated = [...ingredients];
     updated[idx][field] = value;
     setIngredients(updated);
@@ -79,7 +87,9 @@ export default function AddRecipePage() {
   // AI Description Generator
   const handleGenerateAiDescription = async () => {
     if (!title) {
-      setErrorMsg("Please enter a recipe title first before generating a description.");
+      setErrorMsg(
+        "Please enter a recipe title first before generating a description.",
+      );
       return;
     }
     setIsAiLoading(true);
@@ -89,15 +99,19 @@ export default function AddRecipePage() {
       // Mocking / Calling real backend endpoint: /api/ai/generate-description
       // Wait, we need auth token since this is protected in backend.
       // But we can try the API and fallback to high-quality local generation if it fails.
-      const response = await axios.post(`${apiUrl}/ai/generate-description`, {
-        title,
-        ingredients: ingredients.map(i => i.name).filter(Boolean),
-        length: aiLength
-      }, {
-        headers: {
-          // Token is passed if session exists (handled by axios / next-auth session)
-        }
-      });
+      const response = await axios.post(
+        `${apiUrl}/ai/generate-description`,
+        {
+          title,
+          ingredients: ingredients.map((i) => i.name).filter(Boolean),
+          length: aiLength,
+        },
+        {
+          headers: {
+            // Token is passed if session exists (handled by axios / next-auth session)
+          },
+        },
+      );
 
       if (response.data?.description) {
         setFullDescription(response.data.description);
@@ -106,11 +120,17 @@ export default function AddRecipePage() {
         throw new Error("No description returned");
       }
     } catch (err) {
-      console.warn("Backend AI endpoint failed/unauthorized, simulating generation.", err);
+      console.warn(
+        "Backend AI endpoint failed/unauthorized, simulating generation.",
+        err,
+      );
       // Simulate excellent detailed response
       setTimeout(() => {
         let responseText = "";
-        const ingredientString = ingredients.map(i => i.name).filter(Boolean).join(", ");
+        const ingredientString = ingredients
+          .map((i) => i.name)
+          .filter(Boolean)
+          .join(", ");
         if (aiLength === "short") {
           responseText = `A quick and delicious ${cuisineType || "gourmet"} dish featuring ${title}. Prepared with fresh ${ingredientString || "ingredients"} and cooked to absolute perfection. It's the ultimate hassle-free meal for busy weeknights!`;
         } else if (aiLength === "long") {
@@ -136,6 +156,12 @@ export default function AddRecipePage() {
       return;
     }
 
+    if (!isAuthenticated || !token) {
+      setErrorMsg("Please log in before creating a recipe.");
+      router.push("/login");
+      return;
+    }
+
     setIsSubmitting(true);
     setErrorMsg("");
 
@@ -148,30 +174,28 @@ export default function AddRecipePage() {
       cuisineType,
       dietType,
       cookTime,
-      difficulty: "easy", // Default to easy or add to payload
-      images: imageUrl ? [imageUrl] : ["https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&q=80&w=800"],
+      difficulty: "easy",
+      images: imageUrl
+        ? [imageUrl]
+        : [
+            "https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&q=80&w=800",
+          ],
     };
 
     try {
-      // Fetch / recipes POST route
-      const response = await axios.post(`${apiUrl}/recipes`, payload);
+      await axios.post(`${apiUrl}/recipes`, payload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       router.push("/items/manage");
       router.refresh();
-    } catch (err) {
-      console.warn("Backend connection failed. Saving recipe to localStorage for mockup testing.", err);
-      // Fallback sandbox support: save custom recipe to localStorage so manage page can display it
-      const localRecipes = JSON.parse(localStorage.getItem("custom_recipes") || "[]");
-      const newRecipe = {
-        ...payload,
-        _id: `custom-${Date.now()}`,
-        avgRating: 5.0,
-        totalReviews: 1,
-        createdAt: new Date().toISOString(),
-      };
-      localStorage.setItem("custom_recipes", JSON.stringify([...localRecipes, newRecipe]));
-
-      router.push("/items/manage");
-      router.refresh();
+    } catch (err: any) {
+      console.error("Failed to create recipe:", err);
+      setErrorMsg(
+        err?.response?.data?.message ||
+          "Failed to create recipe. Please try again.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -186,7 +210,8 @@ export default function AddRecipePage() {
           <span>Add New Recipe</span>
         </h1>
         <p className="text-sm text-text-brown/70">
-          Create and share your favorite culinary recipes. Fill in parameters and let our AI helper design description contents!
+          Create and share your favorite culinary recipes. Fill in parameters
+          and let our AI helper design description contents!
         </p>
       </div>
 
@@ -197,10 +222,15 @@ export default function AddRecipePage() {
       )}
 
       {/* Main Form Card */}
-      <form onSubmit={handleSubmit} className="bg-white border border-neutral-200/50 p-6 sm:p-8 rounded-2xl shadow-xs flex flex-col gap-6">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white border border-neutral-200/50 p-6 sm:p-8 rounded-2xl shadow-xs flex flex-col gap-6"
+      >
         {/* Title */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-bold uppercase tracking-wider text-text-brown/70">Recipe Title *</label>
+          <label className="text-xs font-bold uppercase tracking-wider text-text-brown/70">
+            Recipe Title *
+          </label>
           <input
             type="text"
             required
@@ -213,7 +243,9 @@ export default function AddRecipePage() {
 
         {/* Short Description */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-bold uppercase tracking-wider text-text-brown/70">Short Summary *</label>
+          <label className="text-xs font-bold uppercase tracking-wider text-text-brown/70">
+            Short Summary *
+          </label>
           <input
             type="text"
             required
@@ -223,14 +255,18 @@ export default function AddRecipePage() {
             onChange={(e) => setShortDescription(e.target.value)}
             className="w-full rounded-xl border border-neutral-300 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
           />
-          <span className="text-[10px] text-neutral-400 text-right">{shortDescription.length}/200 chars</span>
+          <span className="text-[10px] text-neutral-400 text-right">
+            {shortDescription.length}/200 chars
+          </span>
         </div>
 
         {/* Full Description + AI helper */}
         <div className="flex flex-col gap-2">
           <div className="flex justify-between items-center">
-            <label className="text-xs font-bold uppercase tracking-wider text-text-brown/70">Full Detailed Story *</label>
-            
+            <label className="text-xs font-bold uppercase tracking-wider text-text-brown/70">
+              Full Detailed Story *
+            </label>
+
             {/* AI controls */}
             <div className="flex items-center gap-2">
               <select
@@ -256,7 +292,9 @@ export default function AddRecipePage() {
                 ) : (
                   <>
                     <Sparkles className="h-3 w-3 fill-primary" />
-                    <span>{hasGenerated ? "Regenerate" : "Generate with AI"}</span>
+                    <span>
+                      {hasGenerated ? "Regenerate" : "Generate with AI"}
+                    </span>
                   </>
                 )}
               </button>
@@ -277,7 +315,9 @@ export default function AddRecipePage() {
         {/* Dynamic Ingredients list */}
         <div className="flex flex-col gap-3">
           <div className="flex justify-between items-center">
-            <label className="text-xs font-bold uppercase tracking-wider text-text-brown/70">Ingredients list *</label>
+            <label className="text-xs font-bold uppercase tracking-wider text-text-brown/70">
+              Ingredients list *
+            </label>
             <button
               type="button"
               onClick={handleAddIngredient}
@@ -303,7 +343,9 @@ export default function AddRecipePage() {
                     required
                     placeholder="Quantity (e.g. 2 cups, 500g)"
                     value={ing.quantity}
-                    onChange={(e) => handleIngredientChange(idx, "quantity", e.target.value)}
+                    onChange={(e) =>
+                      handleIngredientChange(idx, "quantity", e.target.value)
+                    }
                     className="w-1/3 rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary/50"
                   />
                   <input
@@ -311,7 +353,9 @@ export default function AddRecipePage() {
                     required
                     placeholder="Ingredient Name (e.g. Flour, Cheddar)"
                     value={ing.name}
-                    onChange={(e) => handleIngredientChange(idx, "name", e.target.value)}
+                    onChange={(e) =>
+                      handleIngredientChange(idx, "name", e.target.value)
+                    }
                     className="flex-1 rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary/50"
                   />
                   <button
@@ -333,7 +377,9 @@ export default function AddRecipePage() {
         {/* Dynamic Instruction Steps */}
         <div className="flex flex-col gap-3">
           <div className="flex justify-between items-center">
-            <label className="text-xs font-bold uppercase tracking-wider text-text-brown/70">Instruction Steps *</label>
+            <label className="text-xs font-bold uppercase tracking-wider text-text-brown/70">
+              Instruction Steps *
+            </label>
             <button
               type="button"
               onClick={handleAddStep}
@@ -385,7 +431,9 @@ export default function AddRecipePage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           {/* Cuisine */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold uppercase tracking-wider text-text-brown/70">Cuisine *</label>
+            <label className="text-xs font-bold uppercase tracking-wider text-text-brown/70">
+              Cuisine *
+            </label>
             <input
               type="text"
               required
@@ -398,7 +446,9 @@ export default function AddRecipePage() {
 
           {/* Diet type */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold uppercase tracking-wider text-text-brown/70">Diet Type</label>
+            <label className="text-xs font-bold uppercase tracking-wider text-text-brown/70">
+              Diet Type
+            </label>
             <select
               value={dietType}
               onChange={(e) => setDietType(e.target.value as any)}
@@ -412,7 +462,9 @@ export default function AddRecipePage() {
 
           {/* Cook time */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold uppercase tracking-wider text-text-brown/70">Cook Time (mins) *</label>
+            <label className="text-xs font-bold uppercase tracking-wider text-text-brown/70">
+              Cook Time (mins) *
+            </label>
             <input
               type="number"
               required
@@ -426,7 +478,9 @@ export default function AddRecipePage() {
 
         {/* Image URL */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-bold uppercase tracking-wider text-text-brown/70">Recipe Image URL</label>
+          <label className="text-xs font-bold uppercase tracking-wider text-text-brown/70">
+            Recipe Image URL
+          </label>
           <input
             type="url"
             placeholder="e.g. https://images.unsplash.com/..."

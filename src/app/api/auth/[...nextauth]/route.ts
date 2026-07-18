@@ -10,24 +10,37 @@ const providers: any[] = [
       password: { label: "Password", type: "password" },
     },
     async authorize(credentials) {
-      if (!credentials) return null;
-      
-      // Simulating backend call or demo account validation
-      if (credentials.email === "demo@pantrypilot.com" && credentials.password === "password123") {
+      if (!credentials?.email || !credentials?.password) return null;
+
+      try {
+        const apiUrl =
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+        const res = await fetch(`${apiUrl}/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: credentials.email,
+            password: credentials.password,
+          }),
+        });
+
+        const json = await res.json();
+
+        if (!res.ok || !json?.data?.token) {
+          return null;
+        }
+
         return {
-          id: "demo-user",
-          name: "Chef Pilot",
-          email: "demo@pantrypilot.com",
-          image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150",
+          id: json.data.user._id || json.data.user.id,
+          name: json.data.user.name,
+          email: json.data.user.email,
+          image: json.data.user.avatar,
+          backendToken: json.data.token,
         };
+      } catch (err) {
+        console.error("Login failed:", err);
+        return null;
       }
-      
-      // Real validation can go here against process.env.NEXT_PUBLIC_API_URL
-      return {
-        id: "temp-user",
-        name: credentials.email.split("@")[0],
-        email: credentials.email,
-      };
     },
   }),
 ];
@@ -37,7 +50,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    })
+    }),
   );
 }
 
@@ -54,12 +67,14 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        token.backendToken = (user as any).backendToken;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         (session.user as any).id = token.id;
+        (session as any).backendToken = token.backendToken;
       }
       return session;
     },

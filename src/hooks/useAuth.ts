@@ -10,9 +10,10 @@ export function useAuth() {
   const isAuthenticated = status === "authenticated";
   const isLoading = status === "loading";
   const user = session?.user;
+  const token = (session as any)?.backendToken as string | undefined;
 
   const login = () => router.push("/login");
-  
+
   const logout = async () => {
     await signOut({ redirect: false });
     router.push("/");
@@ -23,6 +24,7 @@ export function useAuth() {
     isAuthenticated,
     isLoading,
     user,
+    token,
     login,
     logout,
   };

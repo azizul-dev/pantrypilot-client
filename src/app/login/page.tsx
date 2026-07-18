@@ -61,13 +61,13 @@ export default function LoginPage() {
     setIsLoading(true);
     setErrors({});
     setEmail("demo@pantrypilot.com");
-    setPassword("password123");
+    setPassword("Demo@1234");
 
     try {
       const res = await signIn("credentials", {
         redirect: false,
         email: "demo@pantrypilot.com",
-        password: "password123",
+        password: "Demo@1234",
       });
 
       if (res?.error) {

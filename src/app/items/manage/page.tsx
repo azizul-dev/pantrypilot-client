@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/hooks/useAuth";
 import {
   Plus,
   Trash2,
@@ -15,7 +16,7 @@ import {
   Star,
   AlertTriangle,
   X,
-  BookOpen
+  BookOpen,
 } from "lucide-react";
 
 interface Recipe {
@@ -34,7 +35,9 @@ interface Recipe {
 
 export default function ManageRecipesPage() {
   const router = useRouter();
+  const { token, isAuthenticated } = useAuth();
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+ 
 
   const [localRecipes, setLocalRecipes] = useState<Recipe[]>([]);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
@@ -51,41 +54,43 @@ export default function ManageRecipesPage() {
   }, []);
 
   // Fetch user's recipes from backend
-  const { data: apiRecipes = [], isLoading, refetch } = useQuery<Recipe[]>({
-    queryKey: ["my-recipes"],
+  // Fetch user's recipes from backend
+  const {
+    data: apiRecipes = [],
+    isLoading,
+    refetch,
+  } = useQuery<Recipe[]>({
+    queryKey: ["my-recipes", token],
     queryFn: async () => {
-      try {
-        const response = await axios.get(`${apiUrl}/recipes/user/mine`);
-        return response.data?.data || response.data || [];
-      } catch (err) {
-        console.warn("Backend recipes unavailable, using localStorage fallback.", err);
-        return [];
-      }
+      if (!token) return [];
+      const response = await axios.get(`${apiUrl}/recipes/user/mine`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const raw = response.data?.data;
+      if (Array.isArray(raw)) return raw;
+      if (Array.isArray(raw?.recipes)) return raw.recipes;
+      if (Array.isArray(response.data)) return response.data;
+      return [];
     },
+    enabled: !!token,
   });
 
-  // Combine API recipes with local (localStorage) ones
-  const allRecipes: Recipe[] = [...apiRecipes, ...localRecipes];
+  const allRecipes: Recipe[] = apiRecipes;
 
   const handleDelete = async (id: string) => {
-    setIsDeleting(true);
-    try {
-      if (id.startsWith("custom-")) {
-        // Delete from localStorage
-        const updated = localRecipes.filter((r) => r._id !== id);
-        localStorage.setItem("custom_recipes", JSON.stringify(updated));
-        setLocalRecipes(updated);
-      } else {
-        await axios.delete(`${apiUrl}/recipes/${id}`);
-        await refetch();
-      }
-    } catch (err) {
-      console.error("Deletion failed:", err);
-    } finally {
-      setIsDeleting(false);
-      setDeleteTargetId(null);
-    }
-  };
+  setIsDeleting(true);
+  try {
+    await axios.delete(`${apiUrl}/recipes/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    await refetch();
+  } catch (err) {
+    console.error("Deletion failed:", err);
+  } finally {
+    setIsDeleting(false);
+    setDeleteTargetId(null);
+  }
+};
 
   const deleteTarget = allRecipes.find((r) => r._id === deleteTargetId);
 
@@ -100,8 +105,12 @@ export default function ManageRecipesPage() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <h1 className="font-poppins font-extrabold text-3xl sm:text-4xl text-secondary">My Recipes</h1>
-          <p className="text-sm text-text-brown/70">View, edit, or manage your contributed recipe creations.</p>
+          <h1 className="font-poppins font-extrabold text-3xl sm:text-4xl text-secondary">
+            My Recipes
+          </h1>
+          <p className="text-sm text-text-brown/70">
+            View, edit, or manage your contributed recipe creations.
+          </p>
         </div>
         <Link
           href="/items/add"
@@ -116,7 +125,10 @@ export default function ManageRecipesPage() {
       {isLoading ? (
         <div className="flex flex-col gap-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-white rounded-2xl border border-neutral-100 p-5 animate-pulse flex gap-4">
+            <div
+              key={i}
+              className="bg-white rounded-2xl border border-neutral-100 p-5 animate-pulse flex gap-4"
+            >
               <div className="w-24 h-20 bg-neutral-200 rounded-xl shrink-0" />
               <div className="flex-1 flex flex-col gap-2 justify-center">
                 <div className="h-4 bg-neutral-200 rounded w-1/2" />
@@ -142,9 +154,12 @@ export default function ManageRecipesPage() {
             </div>
           </div>
           <div className="text-center flex flex-col gap-2 max-w-xs">
-            <h3 className="font-poppins font-extrabold text-xl text-secondary">No Recipes Yet</h3>
+            <h3 className="font-poppins font-extrabold text-xl text-secondary">
+              No Recipes Yet
+            </h3>
             <p className="text-sm text-text-brown/65 leading-relaxed">
-              You haven't contributed any recipes. Start by adding your first culinary creation!
+              You haven't contributed any recipes. Start by adding your first
+              culinary creation!
             </p>
           </div>
           <Link
@@ -162,12 +177,24 @@ export default function ManageRecipesPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-neutral-100 bg-neutral-50/60 text-left">
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-brown/60">Recipe</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-brown/60">Cuisine</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-brown/60">Diet</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-brown/60">Cook Time</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-brown/60">Rating</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-brown/60">Actions</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-brown/60">
+                    Recipe
+                  </th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-brown/60">
+                    Cuisine
+                  </th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-brown/60">
+                    Diet
+                  </th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-brown/60">
+                    Cook Time
+                  </th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-brown/60">
+                    Rating
+                  </th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-brown/60">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-50">
@@ -181,13 +208,20 @@ export default function ManageRecipesPage() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <img
-                          src={recipe.images?.[0] || "https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&q=80&w=200"}
+                          src={
+                            recipe.images?.[0] ||
+                            "https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&q=80&w=200"
+                          }
                           alt={recipe.title}
                           className="w-14 h-12 object-cover rounded-xl shrink-0"
                         />
                         <div>
-                          <p className="font-poppins font-bold text-secondary text-sm line-clamp-1">{recipe.title}</p>
-                          <p className="text-text-brown/60 text-xs line-clamp-1 mt-0.5">{recipe.shortDescription}</p>
+                          <p className="font-poppins font-bold text-secondary text-sm line-clamp-1">
+                            {recipe.title}
+                          </p>
+                          <p className="text-text-brown/60 text-xs line-clamp-1 mt-0.5">
+                            {recipe.shortDescription}
+                          </p>
                         </div>
                       </div>
                     </td>
@@ -197,7 +231,9 @@ export default function ManageRecipesPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`text-xs font-semibold capitalize px-2.5 py-1 rounded-full ${dietColors[recipe.dietType] || "bg-neutral-100 text-neutral-700"}`}>
+                      <span
+                        className={`text-xs font-semibold capitalize px-2.5 py-1 rounded-full ${dietColors[recipe.dietType] || "bg-neutral-100 text-neutral-700"}`}
+                      >
                         {recipe.dietType}
                       </span>
                     </td>
@@ -210,8 +246,12 @@ export default function ManageRecipesPage() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-1 text-xs">
                         <Star className="h-3.5 w-3.5 fill-accent text-accent" />
-                        <span className="font-semibold text-text-brown">{recipe.avgRating}</span>
-                        <span className="text-text-brown/50">({recipe.totalReviews})</span>
+                        <span className="font-semibold text-text-brown">
+                          {recipe.avgRating}
+                        </span>
+                        <span className="text-text-brown/50">
+                          ({recipe.totalReviews})
+                        </span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -248,13 +288,20 @@ export default function ManageRecipesPage() {
                 className="pantry-card flex gap-4 items-start"
               >
                 <img
-                  src={recipe.images?.[0] || "https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&q=80&w=200"}
+                  src={
+                    recipe.images?.[0] ||
+                    "https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&q=80&w=200"
+                  }
                   alt={recipe.title}
                   className="w-20 h-18 object-cover rounded-xl shrink-0"
                 />
                 <div className="flex-1 min-w-0 flex flex-col gap-1.5">
-                  <h3 className="font-poppins font-bold text-sm text-secondary line-clamp-1">{recipe.title}</h3>
-                  <p className="text-text-brown/60 text-xs line-clamp-2">{recipe.shortDescription}</p>
+                  <h3 className="font-poppins font-bold text-sm text-secondary line-clamp-1">
+                    {recipe.title}
+                  </h3>
+                  <p className="text-text-brown/60 text-xs line-clamp-2">
+                    {recipe.shortDescription}
+                  </p>
                   <div className="flex items-center gap-2 mt-1 text-xs text-text-brown/60 flex-wrap">
                     <span>{recipe.cuisineType}</span>
                     <span>•</span>
@@ -326,10 +373,15 @@ export default function ManageRecipesPage() {
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <h3 className="font-poppins font-extrabold text-lg text-secondary">Delete Recipe?</h3>
+                  <h3 className="font-poppins font-extrabold text-lg text-secondary">
+                    Delete Recipe?
+                  </h3>
                   <p className="text-sm text-text-brown/70 leading-relaxed">
                     Are you sure you want to delete{" "}
-                    <strong className="text-secondary">"{deleteTarget?.title}"</strong>? This action cannot be undone.
+                    <strong className="text-secondary">
+                      "{deleteTarget?.title}"
+                    </strong>
+                    ? This action cannot be undone.
                   </p>
                 </div>
 
