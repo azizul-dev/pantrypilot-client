@@ -4,6 +4,7 @@ import { useState } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, X, Plus, Clock, Lightbulb, ChevronRight, Star, AlertCircle } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 interface SuggestedRecipe {
   title: string;
@@ -47,7 +48,9 @@ const FALLBACK_SUGGESTIONS: SuggestedRecipe[] = [
 ];
 
 export default function SuggestPage() {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+    const { token, isAuthenticated } = useAuth();
+
 
   const [ingredients, setIngredients] = useState<string[]>(["Chicken", "Garlic", "Spinach"]);
   const [inputValue, setInputValue] = useState("");
@@ -84,22 +87,26 @@ export default function SuggestPage() {
       setError("Please add at least one ingredient to get suggestions.");
       return;
     }
+    if (!isAuthenticated || !token) {
+      setError("Please log in to get AI recipe suggestions.");
+      return;
+    }
     setIsLoading(true);
     setError("");
     setSuggestions([]);
 
     try {
-      const response = await axios.post(
+     const response = await axios.post(
         `${apiUrl}/ai/suggest-recipes`,
         { ingredients },
         {
           headers: {
-            Authorization: "Bearer demo", // Will fallback gracefully if token is missing
+            Authorization: `Bearer ${token}`,
           },
         }
       );
 
-      const data = response.data?.suggestions || response.data;
+      const data = response.data?.data?.suggestions;
       if (Array.isArray(data) && data.length > 0) {
         setSuggestions(data);
         setHasSearched(true);
@@ -107,11 +114,12 @@ export default function SuggestPage() {
         throw new Error("Empty or invalid suggestion response");
       }
     } catch (err) {
-      console.warn("API unavailable or unauthorized, using simulated suggestions.", err);
-      // Simulate a realistic delay
-      await new Promise((resolve) => setTimeout(resolve, 2200));
-      setSuggestions(FALLBACK_SUGGESTIONS);
-      setHasSearched(true);
+      console.error("AI suggestion request failed:", err);
+      const message =
+        axios.isAxiosError(err) && err.response?.data?.message
+          ? err.response.data.message
+          : "Couldn't get AI suggestions right now. Please try again in a moment.";
+      setError(message);
     } finally {
       setIsLoading(false);
     }
