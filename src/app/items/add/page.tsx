@@ -34,7 +34,7 @@ export default function AddRecipePage() {
   const [cuisineType, setCuisineType] = useState("");
   const [dietType, setDietType] = useState<"veg" | "non-veg" | "vegan">("veg");
   const [cookTime, setCookTime] = useState<number>(30);
-  const [imageUrl, setImageUrl] = useState("");
+  const [images, setImages] = useState<string[]>([""]);
 
   // AI Assistant State
   const [aiLength, setAiLength] = useState<"short" | "medium" | "long">(
@@ -66,6 +66,22 @@ export default function AddRecipePage() {
     const updated = [...ingredients];
     updated[idx][field] = value;
     setIngredients(updated);
+  };
+
+  const handleAddImage = () => {
+    setImages([...images, ""]);
+  };
+
+  const handleRemoveImage = (idx: number) => {
+    if (images.length > 1) {
+      setImages(images.filter((_, i) => i !== idx));
+    }
+  };
+
+  const handleImageChange = (idx: number, value: string) => {
+    const updated = [...images];
+    updated[idx] = value;
+    setImages(updated);
   };
 
   const handleAddStep = () => {
@@ -175,11 +191,12 @@ export default function AddRecipePage() {
       dietType,
       cookTime,
       difficulty: "easy",
-      images: imageUrl
-        ? [imageUrl]
-        : [
-            "https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&q=80&w=800",
-          ],
+      images:
+        images.filter((img) => img.trim() !== "").length > 0
+          ? images.filter((img) => img.trim() !== "")
+          : [
+              "https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&q=80&w=800",
+            ],
     };
 
     try {
@@ -476,18 +493,54 @@ export default function AddRecipePage() {
           </div>
         </div>
 
-        {/* Image URL */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-bold uppercase tracking-wider text-text-brown/70">
-            Recipe Image URL
-          </label>
-          <input
-            type="url"
-            placeholder="e.g. https://images.unsplash.com/..."
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            className="w-full rounded-xl border border-neutral-300 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-          />
+        {/* Recipe Images */}
+        <div className="flex flex-col gap-3">
+          <div className="flex justify-between items-center">
+            <label className="text-xs font-bold uppercase tracking-wider text-text-brown/70">
+              Recipe Images (প্রথমটা main, দ্বিতীয়টা hover-এ দেখাবে)
+            </label>
+            <button
+              type="button"
+              onClick={handleAddImage}
+              className="flex items-center gap-1 text-xs text-primary font-bold hover:underline"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span>Add Another Image</span>
+            </button>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <AnimatePresence initial={false}>
+              {images.map((img, idx) => (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="flex gap-2 items-center"
+                >
+                  <span className="text-[10px] text-neutral-400 w-10 shrink-0">
+                    {idx === 0 ? "Main" : `#${idx + 1}`}
+                  </span>
+                  <input
+                    type="url"
+                    placeholder="e.g. https://images.unsplash.com/..."
+                    value={img}
+                    onChange={(e) => handleImageChange(idx, e.target.value)}
+                    className="flex-1 rounded-xl border border-neutral-300 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveImage(idx)}
+                    disabled={images.length === 1}
+                    className="text-neutral-400 hover:text-red-500 disabled:opacity-30 disabled:hover:text-neutral-400 p-2"
+                  >
+                    <Trash2 className="h-4.5 w-4.5" />
+                  </button>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
         </div>
 
         {/* Actions */}
