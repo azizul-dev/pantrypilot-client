@@ -16,37 +16,6 @@ interface SuggestedRecipe {
   cuisineType: string;
 }
 
-// High-quality fallback suggestions
-const FALLBACK_SUGGESTIONS: SuggestedRecipe[] = [
-  {
-    title: "Creamy Garlic Spinach Pasta",
-    reasoning: "Your available chicken, garlic, and spinach work perfectly here. With just 2 extra pantry items you can make this restaurant-quality Italian pasta dish.",
-    matchScore: 87,
-    missingIngredients: ["Heavy Cream", "Pasta"],
-    cookTime: 25,
-    difficulty: "easy",
-    cuisineType: "Italian",
-  },
-  {
-    title: "Quick Asian Stir-Fry Bowl",
-    reasoning: "Using your garlic and vegetables, this quick high-heat stir-fry brings authentic Asian flavors to the table. The sesame oil and soy sauce are all you need.",
-    matchScore: 74,
-    missingIngredients: ["Soy Sauce", "Sesame Oil", "Rice"],
-    cookTime: 15,
-    difficulty: "easy",
-    cuisineType: "Asian",
-  },
-  {
-    title: "Hearty Vegetable Soup",
-    reasoning: "All the vegetables and aromatics in your pantry are classic soup ingredients. A long simmer brings deep, warming flavors without requiring anything fancy.",
-    matchScore: 91,
-    missingIngredients: ["Vegetable Broth"],
-    cookTime: 40,
-    difficulty: "easy",
-    cuisineType: "American",
-  },
-];
-
 export default function SuggestPage() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
     const { token, isAuthenticated } = useAuth();
