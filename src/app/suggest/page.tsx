@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import {
   Sparkles,
   X,
@@ -12,6 +13,8 @@ import {
   ChevronRight,
   Star,
   AlertCircle,
+  Mic,
+  MicOff,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
@@ -37,10 +40,37 @@ export default function SuggestPage() {
     "Spinach",
   ]);
   const [inputValue, setInputValue] = useState("");
+  const {
+    isListening,
+    isSupported,
+    transcript,
+    startListening,
+    stopListening,
+    error: voiceError,
+  } = useSpeechRecognition();
   const [isLoading, setIsLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<SuggestedRecipe[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (!transcript) return;
+
+    const spokenIngredients = transcript
+      .split(/,| and /i)
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0)
+      .map((item) => item.charAt(0).toUpperCase() + item.slice(1));
+
+    setIngredients((prev) => {
+      const merged = [...prev];
+      spokenIngredients.forEach((item) => {
+        if (!merged.includes(item)) {
+          merged.push(item);
+        }
+      });
+      return merged;
+    });
+  }, [transcript]);
 
   const handleAddIngredient = (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -196,7 +226,36 @@ export default function SuggestPage() {
             }
             className="flex-1 min-w-[120px] text-sm border-none outline-none bg-transparent placeholder:text-neutral-400"
           />
+          {isSupported && (
+            <button
+              type="button"
+              onClick={isListening ? stopListening : startListening}
+              aria-label={
+                isListening ? "Stop voice input" : "Start voice input"
+              }
+              className={`shrink-0 h-8 w-8 rounded-full flex items-center justify-center transition-all ${
+                isListening
+                  ? "bg-red-500 text-white animate-pulse"
+                  : "bg-primary/10 text-primary hover:bg-primary/20"
+              }`}
+            >
+              {isListening ? (
+                <MicOff className="h-4 w-4" />
+              ) : (
+                <Mic className="h-4 w-4" />
+              )}
+            </button>
+          )}
         </div>
+        {isListening && (
+          <p className="text-xs text-primary font-medium flex items-center gap-1.5 -mt-2">
+            <span className="h-1.5 w-1.5 bg-red-500 rounded-full animate-pulse" />
+            Listening... speak your ingredients now
+          </p>
+        )}
+        {voiceError && (
+          <p className="text-xs text-red-500 -mt-2">{voiceError}</p>
+        )}
 
         {/* Quick suggestion pills */}
         <div className="flex flex-wrap gap-2">
