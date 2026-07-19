@@ -395,7 +395,7 @@ function ExploreRecipesContent() {
             </button>
           </div>
         ) : isGridBusy ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {Array.from({ length: LIMIT }).map((_, i) => (
               <div
                 key={i}
@@ -434,7 +434,7 @@ function ExploreRecipesContent() {
             variants={containerVariants}
             initial="hidden"
             animate="show"
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+            className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6"
           >
             {recipes.map((recipe) => (
               <motion.div key={recipe._id} variants={cardVariants}>
@@ -660,7 +660,7 @@ export default function ExploreRecipesPage() {
     <Suspense
       fallback={
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {Array.from({ length: 12 }).map((_, i) => (
               <div
                 key={i}

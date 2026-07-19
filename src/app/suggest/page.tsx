@@ -3,10 +3,21 @@
 import { useState } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, X, Plus, Clock, Lightbulb, ChevronRight, Star, AlertCircle } from "lucide-react";
+import {
+  Sparkles,
+  X,
+  Plus,
+  Clock,
+  Lightbulb,
+  ChevronRight,
+  Star,
+  AlertCircle,
+} from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import Link from "next/link";
 
 interface SuggestedRecipe {
+  recipeId: string;
   title: string;
   reasoning: string;
   matchScore: number;
@@ -18,10 +29,13 @@ interface SuggestedRecipe {
 
 export default function SuggestPage() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
-    const { token, isAuthenticated } = useAuth();
+  const { token, isAuthenticated } = useAuth();
 
-
-  const [ingredients, setIngredients] = useState<string[]>(["Chicken", "Garlic", "Spinach"]);
+  const [ingredients, setIngredients] = useState<string[]>([
+    "Chicken",
+    "Garlic",
+    "Spinach",
+  ]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<SuggestedRecipe[]>([]);
@@ -65,14 +79,14 @@ export default function SuggestPage() {
     setSuggestions([]);
 
     try {
-     const response = await axios.post(
+      const response = await axios.post(
         `${apiUrl}/ai/suggest-recipes`,
         { ingredients },
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       const data = response.data?.data?.suggestions;
@@ -124,7 +138,8 @@ export default function SuggestPage() {
           AI Recipe Suggestions
         </h1>
         <p className="text-sm sm:text-base text-text-brown/70 max-w-lg mx-auto leading-relaxed">
-          Tell us what ingredients you have, and our AI will instantly suggest personalized recipes you can cook today.
+          Tell us what ingredients you have, and our AI will instantly suggest
+          personalized recipes you can cook today.
         </p>
       </div>
 
@@ -135,7 +150,15 @@ export default function SuggestPage() {
             Your Pantry Ingredients
           </label>
           <p className="text-xs text-text-brown/50">
-            Type an ingredient and press <kbd className="bg-neutral-100 border border-neutral-200 rounded px-1.5 py-0.5 font-mono text-[10px]">Enter</kbd> or <kbd className="bg-neutral-100 border border-neutral-200 rounded px-1.5 py-0.5 font-mono text-[10px]">,</kbd> to add it.
+            Type an ingredient and press{" "}
+            <kbd className="bg-neutral-100 border border-neutral-200 rounded px-1.5 py-0.5 font-mono text-[10px]">
+              Enter
+            </kbd>{" "}
+            or{" "}
+            <kbd className="bg-neutral-100 border border-neutral-200 rounded px-1.5 py-0.5 font-mono text-[10px]">
+              ,
+            </kbd>{" "}
+            to add it.
           </p>
         </div>
 
@@ -166,7 +189,11 @@ export default function SuggestPage() {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={ingredients.length === 0 ? "e.g. Chicken, Garlic, Tomatoes..." : "Add more..."}
+            placeholder={
+              ingredients.length === 0
+                ? "e.g. Chicken, Garlic, Tomatoes..."
+                : "Add more..."
+            }
             className="flex-1 min-w-[120px] text-sm border-none outline-none bg-transparent placeholder:text-neutral-400"
           />
         </div>
@@ -174,7 +201,16 @@ export default function SuggestPage() {
         {/* Quick suggestion pills */}
         <div className="flex flex-wrap gap-2">
           <span className="text-xs text-text-brown/50 mt-0.5">Quick add:</span>
-          {["Onion", "Tomato", "Olive Oil", "Garlic", "Eggs", "Cheese", "Rice", "Lemon"].map((item) => (
+          {[
+            "Onion",
+            "Tomato",
+            "Olive Oil",
+            "Garlic",
+            "Eggs",
+            "Cheese",
+            "Rice",
+            "Lemon",
+          ].map((item) => (
             <button
               key={item}
               type="button"
@@ -209,7 +245,9 @@ export default function SuggestPage() {
             <Sparkles className="h-5 w-5" />
           )}
           <span>
-            {isLoading ? "Consulting AI Chef..." : `Get Suggestions (${ingredients.length} ingredients)`}
+            {isLoading
+              ? "Consulting AI Chef..."
+              : `Get Suggestions (${ingredients.length} ingredients)`}
           </span>
         </button>
       </div>
@@ -233,8 +271,13 @@ export default function SuggestPage() {
               </div>
             </div>
             <div className="text-center flex flex-col gap-1.5">
-              <p className="font-poppins font-bold text-secondary">AI is thinking...</p>
-              <p className="text-xs text-text-brown/60">Analyzing your {ingredients.length} ingredients to find perfect matches</p>
+              <p className="font-poppins font-bold text-secondary">
+                AI is thinking...
+              </p>
+              <p className="text-xs text-text-brown/60">
+                Analyzing your {ingredients.length} ingredients to find perfect
+                matches
+              </p>
             </div>
             {/* Animated dots */}
             <div className="flex gap-1.5">
@@ -296,12 +339,16 @@ export default function SuggestPage() {
                         <Clock className="h-3 w-3" />
                         {recipe.cookTime} min
                       </span>
-                      <span className="capitalize font-medium">{recipe.difficulty}</span>
+                      <span className="capitalize font-medium">
+                        {recipe.difficulty}
+                      </span>
                     </div>
                   </div>
 
                   {/* Match Score Badge */}
-                  <div className={`flex items-center gap-1.5 border text-sm font-bold px-3 py-1.5 rounded-full shrink-0 ${matchScoreColor(recipe.matchScore)}`}>
+                  <div
+                    className={`flex items-center gap-1.5 border text-sm font-bold px-3 py-1.5 rounded-full shrink-0 ${matchScoreColor(recipe.matchScore)}`}
+                  >
                     <Star className="h-3.5 w-3.5 fill-current" />
                     <span>{recipe.matchScore}% match</span>
                   </div>
@@ -338,10 +385,13 @@ export default function SuggestPage() {
 
                 {/* CTA */}
                 <div className="flex justify-end">
-                  <button className="flex items-center gap-1.5 text-sm font-semibold text-primary hover:text-primary/80 transition-colors">
+                  <Link
+                    href={`/recipes/${recipe.recipeId}`}
+                    className="flex items-center gap-1.5 text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
+                  >
                     <span>View Full Recipe</span>
                     <ChevronRight className="h-4 w-4" />
-                  </button>
+                  </Link>
                 </div>
               </motion.div>
             ))}

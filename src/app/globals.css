@@ -35,6 +35,11 @@ body {
   border: 1px solid rgba(229, 229, 229, 0.5);
   transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
+@media (max-width: 640px) {
+  .pantry-card {
+    padding: 1rem;
+  }
+}
 
 .pantry-card:hover {
   transform: translateY(-4px);

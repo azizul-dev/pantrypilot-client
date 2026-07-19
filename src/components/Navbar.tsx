@@ -2,7 +2,18 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu, X, ChefHat, LogOut, PlusCircle, LayoutDashboard, LogIn, Sparkles, Heart } from "lucide-react";import { motion, AnimatePresence } from "framer-motion";
+import {
+  Menu,
+  X,
+  ChefHat,
+  LogOut,
+  PlusCircle,
+  LayoutDashboard,
+  LogIn,
+  Sparkles,
+  Heart,
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -23,19 +34,28 @@ export default function Navbar() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-neutral-200/50 bg-white/80 backdrop-blur-md">
+    <header className="sticky top-0 z-50 w-full border-b border-neutral-200/50">
+      <div className="absolute inset-0 bg-white/80 backdrop-blur-md -z-10" />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 font-poppins font-bold text-xl text-primary">
+          <Link
+            href="/"
+            className="flex items-center gap-2 font-poppins font-bold text-xl text-primary"
+          >
             <ChefHat className="h-6 w-6 text-primary" />
-            <span>Pantry<span className="text-secondary">Pilot</span></span>
+            <span>
+              Pantry<span className="text-secondary">Pilot</span>
+            </span>
           </Link>
 
           {/* Desktop Nav Links */}
           <nav className="hidden md:flex items-center gap-8 font-medium">
             {mainLinks.map((link) => {
-              const active = link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
+              const active =
+                link.href === "/"
+                  ? pathname === "/"
+                  : pathname.startsWith(link.href);
               return (
                 <Link
                   key={link.label}
@@ -102,7 +122,11 @@ export default function Navbar() {
               onClick={toggleMenu}
               className="inline-flex items-center justify-center rounded-md p-2 text-text-brown hover:bg-neutral-100 hover:text-primary transition-colors"
             >
-              {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              {isOpen ? (
+                <X className="h-6 w-6" />
+              ) : (
+                <Menu className="h-6 w-6" />
+              )}
             </button>
           </div>
         </div>
@@ -131,7 +155,10 @@ export default function Navbar() {
               <div className="flex flex-col gap-6">
                 <nav className="flex flex-col gap-4">
                   {mainLinks.map((link) => {
-                    const active = link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
+                    const active =
+                      link.href === "/"
+                        ? pathname === "/"
+                        : pathname.startsWith(link.href);
                     return (
                       <Link
                         key={link.label}
@@ -184,7 +211,10 @@ export default function Navbar() {
               <div>
                 {isAuthenticated ? (
                   <button
-                    onClick={() => { logout(); toggleMenu(); }}
+                    onClick={() => {
+                      logout();
+                      toggleMenu();
+                    }}
                     className="flex w-full items-center justify-center gap-2 rounded-xl border border-neutral-200 py-3 font-medium text-text-brown hover:bg-neutral-50"
                   >
                     <LogOut className="h-5 w-5" />
