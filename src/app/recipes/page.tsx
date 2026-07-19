@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import axios from "axios";
 import Link from "next/link";
@@ -58,8 +58,8 @@ function buildPageRange(current: number, total: number): (number | "...")[] {
   return pages;
 }
 
-export default function ExploreRecipesPage() {
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+function ExploreRecipesContent() {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
   // Ref for smooth scroll target
   const gridRef = useRef<HTMLDivElement>(null);
   const { isInWishlist, toggleWishlist } = useWishlist();
@@ -68,7 +68,9 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
   // State
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [selectedCuisine, setSelectedCuisine] = useState(searchParams.get("cuisine") || "All");
+  const [selectedCuisine, setSelectedCuisine] = useState(
+    searchParams.get("cuisine") || "All",
+  );
   const [selectedDiet, setSelectedDiet] = useState("All");
   const [maxCookTime, setMaxCookTime] = useState(120);
   const [sortBy, setSortBy] = useState("newest");
@@ -86,7 +88,15 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
   // Fetch from backend with page + limit
   const { data, isLoading, isFetching, isError } = useQuery<PaginatedResponse>({
-    queryKey: ["explore-recipes", debouncedSearch, selectedCuisine, selectedDiet, maxCookTime, sortBy, currentPage],
+    queryKey: [
+      "explore-recipes",
+      debouncedSearch,
+      selectedCuisine,
+      selectedDiet,
+      maxCookTime,
+      sortBy,
+      currentPage,
+    ],
     queryFn: async () => {
       try {
         const params: Record<string, string | number> = {
@@ -96,7 +106,8 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
         };
         if (debouncedSearch) params.search = debouncedSearch;
         if (selectedCuisine !== "All") params.cuisineType = selectedCuisine;
-        if (selectedDiet !== "All") params.dietType = selectedDiet.toLowerCase().replace("-", "-");
+        if (selectedDiet !== "All")
+          params.dietType = selectedDiet.toLowerCase().replace("-", "-");
         if (maxCookTime < 120) params.maxCookTime = maxCookTime;
 
         const response = await axios.get(`${apiUrl}/recipes`, { params });
@@ -113,7 +124,8 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
             totalPages: raw.data.totalPages,
           };
         }
-        if (raw?.data && raw?.totalPages !== undefined) return raw as PaginatedResponse;
+        if (raw?.data && raw?.totalPages !== undefined)
+          return raw as PaginatedResponse;
         if (Array.isArray(raw?.data)) {
           return {
             data: raw.data,
@@ -145,7 +157,7 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
       // Smooth-scroll to grid top
       gridRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     },
-    [currentPage]
+    [currentPage],
   );
 
   const handleResetFilters = () => {
@@ -178,9 +190,12 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 flex flex-col gap-8">
       {/* Page Header */}
       <div className="flex flex-col gap-2">
-        <h1 className="font-poppins font-extrabold text-3xl sm:text-4xl text-secondary">Explore Recipes</h1>
+        <h1 className="font-poppins font-extrabold text-3xl sm:text-4xl text-secondary">
+          Explore Recipes
+        </h1>
         <p className="text-sm text-text-brown/70 max-w-xl">
-          Search culinary databases, filter by dietary constraints or cuisine, and find the perfect meal.
+          Search culinary databases, filter by dietary constraints or cuisine,
+          and find the perfect meal.
         </p>
       </div>
 
@@ -216,7 +231,10 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
           <div className="relative min-w-[140px]">
             <select
               value={sortBy}
-              onChange={(e) => { setSortBy(e.target.value); setCurrentPage(1); }}
+              onChange={(e) => {
+                setSortBy(e.target.value);
+                setCurrentPage(1);
+              }}
               aria-label="Sort recipes"
               className="w-full appearance-none rounded-2xl border border-neutral-300 bg-white px-4 py-3.5 pr-10 text-sm font-semibold text-text-brown focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-xs cursor-pointer"
             >
@@ -241,12 +259,27 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
             <div className="bg-bg-cream rounded-2xl p-5 sm:p-6 border border-neutral-200/60 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 shadow-xs">
               {/* Cuisine filter */}
               <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-text-brown/70">Cuisine</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-text-brown/70">
+                  Cuisine
+                </label>
                 <div className="flex flex-wrap gap-2">
-                  {["All", "Italian", "Indian", "Mexican", "Mediterranean", "Asian", "French", "Korean", "Thai"].map((c) => (
+                  {[
+                    "All",
+                    "Italian",
+                    "Indian",
+                    "Mexican",
+                    "Mediterranean",
+                    "Asian",
+                    "French",
+                    "Korean",
+                    "Thai",
+                  ].map((c) => (
                     <button
                       key={c}
-                      onClick={() => { setSelectedCuisine(c); setCurrentPage(1); }}
+                      onClick={() => {
+                        setSelectedCuisine(c);
+                        setCurrentPage(1);
+                      }}
                       aria-pressed={selectedCuisine === c}
                       className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none ${
                         selectedCuisine === c
@@ -262,12 +295,17 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
               {/* Diet filter */}
               <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-text-brown/70">Diet</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-text-brown/70">
+                  Diet
+                </label>
                 <div className="flex flex-wrap gap-2">
                   {["All", "Veg", "Non-Veg", "Vegan"].map((d) => (
                     <button
                       key={d}
-                      onClick={() => { setSelectedDiet(d); setCurrentPage(1); }}
+                      onClick={() => {
+                        setSelectedDiet(d);
+                        setCurrentPage(1);
+                      }}
                       aria-pressed={selectedDiet === d}
                       className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none ${
                         selectedDiet === d
@@ -284,7 +322,9 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
               {/* Cook time range */}
               <div className="flex flex-col gap-2 sm:col-span-2 lg:col-span-1">
                 <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold uppercase tracking-wider text-text-brown/70">Max Cook Time</label>
+                  <label className="text-xs font-bold uppercase tracking-wider text-text-brown/70">
+                    Max Cook Time
+                  </label>
                   <span className="text-xs font-bold text-primary tabular-nums">
                     {maxCookTime >= 120 ? "Any" : `${maxCookTime} min`}
                   </span>
@@ -296,7 +336,10 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
                   step="5"
                   value={maxCookTime}
                   aria-label="Maximum cook time filter"
-                  onChange={(e) => { setMaxCookTime(Number(e.target.value)); setCurrentPage(1); }}
+                  onChange={(e) => {
+                    setMaxCookTime(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
                   className="w-full accent-primary h-1.5 bg-neutral-200 rounded-lg appearance-none cursor-pointer"
                 />
                 <div className="flex justify-between text-[10px] text-text-brown/45">
@@ -334,10 +377,15 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
         {/* Skeleton Loader */}
         {isError ? (
           <div className="text-center py-20 bg-white rounded-2xl border border-neutral-200/50 flex flex-col items-center gap-4">
-            <span className="text-5xl" role="img" aria-label="error">⚠️</span>
-            <h3 className="font-poppins font-bold text-lg text-secondary">Couldn&apos;t Load Recipes</h3>
+            <span className="text-5xl" role="img" aria-label="error">
+              ⚠️
+            </span>
+            <h3 className="font-poppins font-bold text-lg text-secondary">
+              Couldn&apos;t Load Recipes
+            </h3>
             <p className="text-sm text-text-brown/65 max-w-sm">
-              Something went wrong while fetching recipes from the server. Please check your connection and try again.
+              Something went wrong while fetching recipes from the server.
+              Please check your connection and try again.
             </p>
             <button
               onClick={() => window.location.reload()}
@@ -349,7 +397,10 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
         ) : isGridBusy ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {Array.from({ length: LIMIT }).map((_, i) => (
-              <div key={i} className="bg-white rounded-2xl p-5 shadow-sm border border-neutral-100 animate-pulse flex flex-col gap-3">
+              <div
+                key={i}
+                className="bg-white rounded-2xl p-5 shadow-sm border border-neutral-100 animate-pulse flex flex-col gap-3"
+              >
                 <div className="w-full aspect-[4/3] bg-neutral-200 rounded-xl" />
                 <div className="h-3 bg-neutral-200 rounded w-1/3" />
                 <div className="h-4 bg-neutral-200 rounded w-2/3" />
@@ -360,10 +411,15 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
           </div>
         ) : recipes.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-2xl border border-neutral-200/50 flex flex-col items-center gap-4">
-            <span className="text-5xl" role="img" aria-label="searching">🔍</span>
-            <h3 className="font-poppins font-bold text-lg text-secondary">No Recipes Found</h3>
+            <span className="text-5xl" role="img" aria-label="searching">
+              🔍
+            </span>
+            <h3 className="font-poppins font-bold text-lg text-secondary">
+              No Recipes Found
+            </h3>
             <p className="text-sm text-text-brown/65 max-w-sm">
-              We couldn&apos;t find any recipes matching your criteria. Try resetting your filters or search query.
+              We couldn&apos;t find any recipes matching your criteria. Try
+              resetting your filters or search query.
             </p>
             <button
               onClick={handleResetFilters}
@@ -382,13 +438,19 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
           >
             {recipes.map((recipe) => (
               <motion.div key={recipe._id} variants={cardVariants}>
-                <Link href={`/recipes/${recipe._id}`} className="block group h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-2xl">
+                <Link
+                  href={`/recipes/${recipe._id}`}
+                  className="block group h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-2xl"
+                >
                   <article className="pantry-card h-full flex flex-col">
                     {/* Image */}
                     <div className="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-neutral-100 mb-4 shrink-0">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={recipe.images?.[0] || "https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&q=80&w=600"}
+                        src={
+                          recipe.images?.[0] ||
+                          "https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&q=80&w=600"
+                        }
                         alt={`Photo of ${recipe.title}`}
                         width={600}
                         height={450}
@@ -437,9 +499,18 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
                     {/* Content */}
                     <div className="flex-grow flex flex-col gap-1.5">
                       <div className="flex items-center gap-1">
-                        <Star className="h-3.5 w-3.5 fill-accent text-accent shrink-0" aria-hidden="true" />
-                        <span className="text-xs font-semibold text-text-brown" aria-label={`Rating: ${recipe.avgRating} from ${recipe.totalReviews} reviews`}>
-                          {recipe.avgRating} <span className="text-text-brown/50 font-normal">({recipe.totalReviews})</span>
+                        <Star
+                          className="h-3.5 w-3.5 fill-accent text-accent shrink-0"
+                          aria-hidden="true"
+                        />
+                        <span
+                          className="text-xs font-semibold text-text-brown"
+                          aria-label={`Rating: ${recipe.avgRating} from ${recipe.totalReviews} reviews`}
+                        >
+                          {recipe.avgRating}{" "}
+                          <span className="text-text-brown/50 font-normal">
+                            ({recipe.totalReviews})
+                          </span>
                         </span>
                       </div>
                       <h2 className="font-poppins font-bold text-sm sm:text-base text-secondary group-hover:text-primary transition-colors line-clamp-1">
@@ -453,7 +524,10 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
                     {/* Footer */}
                     <div className="border-t border-neutral-100 mt-4 pt-3 flex items-center justify-between text-xs text-text-brown/60 shrink-0">
                       <div className="flex items-center gap-1.5">
-                        <Clock className="h-3.5 w-3.5 text-neutral-400" aria-hidden="true" />
+                        <Clock
+                          className="h-3.5 w-3.5 text-neutral-400"
+                          aria-hidden="true"
+                        />
                         <span>{recipe.cookTime} min</span>
                       </div>
                       <span className="capitalize font-semibold text-primary bg-primary/8 px-2.5 py-0.5 rounded-full text-[11px]">
@@ -470,8 +544,10 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
       {/* ───── Pagination ───── */}
       {!isGridBusy && totalPages > 1 && (
-        <nav aria-label="Recipe page navigation" className="flex flex-col items-center gap-4 pt-4">
-
+        <nav
+          aria-label="Recipe page navigation"
+          className="flex flex-col items-center gap-4 pt-4"
+        >
           {/* Mobile: Prev / Page X of Y / Next */}
           <div className="flex sm:hidden items-center gap-3">
             <motion.button
@@ -489,7 +565,8 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
             </motion.button>
 
             <span className="text-sm font-semibold text-text-brown/70 tabular-nums whitespace-nowrap">
-              Page <strong className="text-secondary">{currentPage}</strong> of <strong className="text-secondary">{totalPages}</strong>
+              Page <strong className="text-secondary">{currentPage}</strong> of{" "}
+              <strong className="text-secondary">{totalPages}</strong>
             </span>
 
             <motion.button
@@ -551,7 +628,7 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
                 >
                   {item}
                 </motion.button>
-              )
+              ),
             )}
 
             {/* Next */}
@@ -571,5 +648,29 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
         </nav>
       )}
     </div>
+  );
+}
+export default function ExploreRecipesPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div
+                key={i}
+                className="bg-white rounded-2xl p-5 shadow-sm border border-neutral-100 animate-pulse flex flex-col gap-3"
+              >
+                <div className="w-full aspect-[4/3] bg-neutral-200 rounded-xl" />
+                <div className="h-3 bg-neutral-200 rounded w-1/3" />
+                <div className="h-4 bg-neutral-200 rounded w-2/3" />
+              </div>
+            ))}
+          </div>
+        </div>
+      }
+    >
+      <ExploreRecipesContent />
+    </Suspense>
   );
 }
