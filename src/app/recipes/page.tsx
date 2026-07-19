@@ -395,7 +395,7 @@ function ExploreRecipesContent() {
             </button>
           </div>
         ) : isGridBusy ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {Array.from({ length: LIMIT }).map((_, i) => (
               <div
                 key={i}
@@ -434,7 +434,7 @@ function ExploreRecipesContent() {
             variants={containerVariants}
             initial="hidden"
             animate="show"
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
           >
             {recipes.map((recipe) => (
               <motion.div key={recipe._id} variants={cardVariants}>
@@ -522,16 +522,21 @@ function ExploreRecipesContent() {
                     </div>
 
                     {/* Footer */}
+                 {/* Footer */}
                     <div className="border-t border-neutral-100 mt-4 pt-3 flex items-center justify-between text-xs text-text-brown/60 shrink-0">
                       <div className="flex items-center gap-1.5">
-                        <Clock
-                          className="h-3.5 w-3.5 text-neutral-400"
-                          aria-hidden="true"
-                        />
+                        <Clock className="h-3.5 w-3.5 text-neutral-400" aria-hidden="true" />
                         <span>{recipe.cookTime} min</span>
                       </div>
                       <span className="capitalize font-semibold text-primary bg-primary/8 px-2.5 py-0.5 rounded-full text-[11px]">
                         {recipe.difficulty}
+                      </span>
+                    </div>
+
+                    {/* View Details */}
+                    <div className="mt-3">
+                      <span className="inline-flex items-center justify-center w-full gap-1.5 bg-primary/10 group-hover:bg-primary group-hover:text-white text-primary font-semibold text-xs py-2 rounded-xl transition-colors">
+                        View Details
                       </span>
                     </div>
                   </article>
@@ -655,7 +660,7 @@ export default function ExploreRecipesPage() {
     <Suspense
       fallback={
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {Array.from({ length: 12 }).map((_, i) => (
               <div
                 key={i}

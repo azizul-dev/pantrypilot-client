@@ -301,19 +301,18 @@ export default function BlogPage() {
                     {post.excerpt}
                   </p>
 
-                  <div className="flex items-center justify-between border-t border-neutral-100 pt-4 mt-auto">
-                    <div className="flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-full bg-secondary/10 flex items-center justify-center text-secondary font-bold text-xs">
-                        {authorName(post.authorId).charAt(0)}
-                      </div>
-                      <span className="text-sm font-semibold text-text-brown/80">
-                        {authorName(post.authorId)}
-                      </span>
+                  <div className="flex items-center gap-2 border-t border-neutral-100 pt-4 mt-auto mb-3">
+                    <div className="h-8 w-8 rounded-full bg-secondary/10 flex items-center justify-center text-secondary font-bold text-xs">
+                      {authorName(post.authorId).charAt(0)}
                     </div>
-                    <span className="text-primary hover:text-primary/80 transition-colors p-2 -mr-2">
-                      <ArrowRight className="h-5 w-5" />
+                    <span className="text-sm font-semibold text-text-brown/80">
+                      {authorName(post.authorId)}
                     </span>
                   </div>
+                  <span className="inline-flex items-center justify-center w-full gap-1.5 bg-primary/10 group-hover:bg-primary group-hover:text-white text-primary font-semibold text-xs py-2 rounded-xl transition-colors">
+                    View Details
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </span>
                 </div>
               </Link>
             </motion.article>

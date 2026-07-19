@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { motion } from "framer-motion";
@@ -63,9 +64,13 @@ export default function FeaturedRecipesSection() {
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8"
           >
             {recipes.slice(0, 8).map((recipe) => (
-              <article
+              <Link
                 key={recipe._id}
-                className="pantry-card group cursor-pointer overflow-hidden flex flex-col justify-between"
+                href={`/recipes/${recipe._id}`}
+                className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-2xl"
+              >
+              <article
+                className="pantry-card group cursor-pointer overflow-hidden flex flex-col justify-between h-full"
               >
                 <div className="relative w-full h-48 mb-4 rounded-xl overflow-hidden bg-neutral-100 shrink-0">
                   <img
@@ -127,7 +132,14 @@ export default function FeaturedRecipesSection() {
                     {recipe.difficulty}
                   </span>
                 </div>
+
+                <div className="mt-3">
+                  <span className="inline-flex items-center justify-center w-full gap-1.5 bg-primary/10 group-hover:bg-primary group-hover:text-white text-primary font-semibold text-xs py-2 rounded-xl transition-colors">
+                    View Details
+                  </span>
+                </div>
               </article>
+              </Link>
             ))}
           </motion.div>
         )}
