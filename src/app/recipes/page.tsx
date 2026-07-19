@@ -60,6 +60,11 @@ function buildPageRange(current: number, total: number): (number | "...")[] {
 
 function ExploreRecipesContent() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+  const sortMap: Record<string, string> = {
+    newest: "-createdAt",
+    rating: "-avgRating",
+    cookTime: "cookTime",
+  };
   // Ref for smooth scroll target
   const gridRef = useRef<HTMLDivElement>(null);
   const { isInWishlist, toggleWishlist } = useWishlist();
@@ -102,7 +107,7 @@ function ExploreRecipesContent() {
         const params: Record<string, string | number> = {
           page: currentPage,
           limit: LIMIT,
-          sort: sortBy,
+          sortBy: sortMap[sortBy] || "-createdAt", 
         };
         if (debouncedSearch) params.search = debouncedSearch;
         if (selectedCuisine !== "All") params.cuisineType = selectedCuisine;
